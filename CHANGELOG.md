@@ -6,4 +6,8 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `nowindow.Set` starts a console child of a GUI process without a console window on Windows; a no-op elsewhere.
+
 [Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/commits/main
