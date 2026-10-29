@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -88,12 +89,12 @@ func TestSplitExecLeavesFieldCodesAndReadsOlderSpellings(t *testing.T) {
 	}
 }
 
-// desktop-file-validate is the freedesktop reference check of the file format. CI installs it; elsewhere the test
-// runs only where it is present.
+// desktop-file-validate is the freedesktop reference check of the file format. CI's Linux legs install it; elsewhere
+// the test runs only where it is present.
 func TestWrittenEntriesPassDesktopFileValidate(t *testing.T) {
 	_, err := exec.LookPath("desktop-file-validate")
 	if err != nil {
-		if os.Getenv("CI") != "" {
+		if os.Getenv("CI") != "" && runtime.GOOS == "linux" {
 			t.Fatal("desktop-file-validate is required in CI: install desktop-file-utils")
 		}
 		t.Skip("desktop-file-validate not on PATH")
