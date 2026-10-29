@@ -62,7 +62,7 @@ func main() {
 | `flatpak.Command` | `flatpak-spawn --host` inside a Flatpak, the command itself outside. `Dir` and `Env` set on the inside Cmd do not reach the host program: use `HostArgv`. |
 | `flatpak.CommandContext` | For `flatpak-spawn`, cancel sends SIGTERM (which it forwards to the host child) and `WaitDelay` is 5 s. |
 | `flatpak.HostLookPath` | An absolute path, or `exec.ErrNotFound`; a shell builtin's bare name is not a path. Always spawns `flatpak-spawn`. |
-| `userdirs` functions | An environment value only when home is the process's own home and the value is absolute; otherwise the default under home. `""` for an empty home. Never reads `runtime.GOOS`. |
+| `userdirs` functions | An environment value only when home is the process's own home and the value is absolute; otherwise the default under home. `""` for an empty home. Never reads `runtime.GOOS`. A test that fakes a home sets `USERPROFILE` beside `HOME`, since `os.UserHomeDir` reads it on Windows. |
 | `userdirs.HostConfigHome`, `HostDataHome` | Inside a Flatpak, read `HOST_XDG_*`, not the app's own `XDG_*`. |
 | `desktopentry.Exec` | `argv[0]` is always quoted; every `%` is doubled; field codes are the caller's to append. |
 | `desktopentry.SplitExec` | Undoes string escapes, quoting and `%%`, so a literal `%%u` and the field code `%u` both read back as `%u`. Other field codes stay for the caller. |
