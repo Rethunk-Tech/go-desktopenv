@@ -26,6 +26,12 @@ jobs:
         with:
           persist-credentials: false
 
+      # The portal tests run under a private session bus and the entry tests under the reference validator; the
+      # tests fail rather than skip in CI when either is missing.
+      - name: Install dbus and desktop-file-utils
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y dbus desktop-file-utils
+
       - name: Set up Go
         uses: Rethunk-Tech/gh-actions/setup-go@67ec8bd68343d915462729ad119c355740cf6205 # v1.22
         with:
@@ -63,6 +69,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # The portal tests run under a private session bus and the entry tests under the reference validator; the
+      # tests fail rather than skip in CI when either is missing.
+      - name: Install dbus and desktop-file-utils
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y dbus desktop-file-utils
 
       # The race detector keeps a goroutine from becoming shared state unnoticed.
       - name: Test
