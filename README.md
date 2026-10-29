@@ -9,10 +9,9 @@
 
 ---
 
-What a packaged Go desktop app needs to reach its desktop: xdg-desktop-portal calls, Flatpak detection and host commands, per-user folders, console-less Windows children and Desktop Entry Exec values. Package `desktopenv`, module `github.com/Rethunk-Tech/go-desktopenv`.
+What a packaged Go desktop app needs to reach its desktop: xdg-desktop-portal calls, Flatpak detection and host commands, per-user folders, console-less Windows children and Desktop Entry Exec values. Module `github.com/Rethunk-Tech/go-desktopenv`, five packages: `portal`, `flatpak`, `userdirs`, `desktopentry` and `nowindow`. Import only the ones you need; `flatpak`, `userdirs`, `desktopentry` and `nowindow` pull in no third-party code.
 
-<!-- scaffold: one short paragraph on what the package guarantees and why it exists, in plain
-words. -->
+A Flatpak app needs `--talk-name=org.freedesktop.Flatpak` for `flatpak`; portals need nothing extra. A `portal` call waits on a user dialog until its context ends, so set a deadline. `RetrieveSecret` works only inside a Flatpak.
 
 ## Quick start
 
@@ -24,7 +23,11 @@ A worked example and the contracts: [HUMANS.md](HUMANS.md).
 
 ## Features
 
-<!-- scaffold: 3 to 6 bullets, each a capability a caller can rely on. No roadmap. -->
+- `portal`: autostart, launchers, the per-app secret and desktop settings, each bounded by your context
+- `flatpak`: detect a sandbox, run or build a command for the host, end the host child on cancel
+- `userdirs`: config and data folders per home, honouring only absolute environment values for the real home
+- `desktopentry`: escape, build and read Desktop Entry `Exec=` values
+- `nowindow`: no console window for a console child of a Windows GUI process
 
 ## Documentation
 
