@@ -26,10 +26,11 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
 - `portal/errors.go` carries no build tag, so Windows and darwin builds declare the same sentinels.
 - `userdirs` decides by `home`, never by `runtime.GOOS`: the caller knows which layout it is resolving. The
   environment describes only the real home, hence the real-home check and `""` for an empty home.
-- `flatpak.Inside` is `FLATPAK_ID`, not `/.flatpak-info`: it is what tests can set and what released apps used.
+- `flatpak.Inside` is `FLATPAK_ID`, not `/.flatpak-info`: Flatpak sets it for every app, and tests can set it.
 - `HostLookPath` asks the host's `sh` (`command -v`), not `which`, which minimal hosts lack, and rejects a
   non-absolute answer because `command -v` prints a builtin by its bare name.
-- `desktopentry.Exec` always quotes `argv[0]`: readers in released apps match the `Exec="` prefix.
+- `desktopentry.Exec` always quotes `argv[0]`, so a reader can find the program path by its quoted form whatever
+  characters it holds.
 - `SplitExec` undoes `%%` before the caller sees field codes; a literal `%%u` is indistinguishable from `%u`.
   Accepted: no known entry carries one.
 
