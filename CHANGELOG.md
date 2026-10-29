@@ -9,5 +9,6 @@ Notable changes to `go-desktopenv`. The format follows
 ### Added
 
 - `nowindow.Set` starts a console child of a GUI process without a console window on Windows; a no-op elsewhere.
+- `desktopentry.Value`, `Exec` and `SplitExec` escape a Desktop Entry string value, build an `Exec=` value from an argv, and split one back, checked against `desktop-file-validate`.
 
 [Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/commits/main
