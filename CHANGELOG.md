@@ -6,6 +6,13 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `hostenv.Environ` gives a child process the environment without the variables an AppImage's AppRun injected.
+- `fonts.List` lists the installed font families from fontconfig or the Windows registry.
+- `sysaccent.Read` reads the desktop's accent colour from the DWM or the Settings portal.
+- `lnk` writes a Windows `.lnk` and reads its arguments through `WScript.Shell`, and lists a folder's shortcuts.
+
 ## [0.1.0] - 2026-10-29
 
 ### Added

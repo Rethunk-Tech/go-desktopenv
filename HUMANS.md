@@ -67,6 +67,11 @@ func main() {
 | `desktopentry.Exec` | `argv[0]` is always quoted; every `%` is doubled; field codes are the caller's to append. |
 | `desktopentry.SplitExec` | Undoes string escapes, quoting and `%%`, so a literal `%%u` and the field code `%u` both read back as `%u`. Other field codes stay for the caller. |
 | `nowindow.Set` | Adds `CREATE_NO_WINDOW` and keeps the existing `SysProcAttr`; a no-op off Windows. |
+| `hostenv.Environ` | `os.Environ`, except inside an AppImage (`APPIMAGE` and `APPDIR` set) on Linux: path-list entries under `$APPDIR` are dropped, a variable they empty is dropped, and so are `APPDIR`, `APPIMAGE` and `OWD`. |
+| `fonts.List` | Sorted, case-insensitively unique family names: `fc-list` (10 s limit) on Linux, the machine and user fonts registry keys on Windows, `nil` elsewhere. `ParseFcList` and `ParseWindowsNames` take the raw text on any platform. |
+| `sysaccent.Read` | `"#RRGGBB"` and true, or false when the desktop sets none: the DWM `AccentColor` on Windows, the portal's `accent-color` (5 s limit) on Linux, false elsewhere. `FromDWM` and `FromPortal` convert the raw values on any platform. |
+| `lnk.Write`, `Arguments` | Windows only (`ErrUnsupported` elsewhere). `Write` replaces the file; `Target` and `Arguments` are always set, so an empty `Arguments` clears the old ones, and an empty `WorkingDir`, `Icon` or `Description` is left unset. |
+| `lnk.Files` | The `.lnk` files directly in a folder; a missing folder holds none. Any platform. |
 
 `portal` tests run under a private session bus: they need `dbus-run-session`, and `desktopentry` tests use
 `desktop-file-validate` when present. Both are required (the test fails) when `CI` is set. `TestLivePortal` calls

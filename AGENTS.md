@@ -1,16 +1,18 @@
 # AGENTS.md
 
-Five packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
+Nine packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
 `flatpak` (sandbox detection and host commands), `userdirs` (per-user folders), `desktopentry` (Desktop Entry
-values) and `nowindow` (console-less Windows children). It imports no consumer package, no GUI toolkit and no
-branding; names, ids and wording are caller arguments. `portal` alone imports godbus, and `nowindow` alone imports
-`golang.org/x/sys`, so a consumer of another package gains neither requirement.
+values), `nowindow` (console-less Windows children), `hostenv` (a child's environment outside an AppImage's),
+`fonts` (installed families), `sysaccent` (the desktop's accent colour) and `lnk` (Windows shortcut files). It imports no consumer package, no GUI toolkit and no
+branding; names, ids and wording are caller arguments. `portal` alone imports godbus; `nowindow`, `fonts` and `sysaccent` import
+`golang.org/x/sys` and `lnk` imports go-ole, on Windows only, so a consumer of another package gains none of them.
+`sysaccent` reads through `portal` on Linux, and `fonts` runs `fc-list` with `hostenv`'s environment.
 
 ## Gate
 
 `gate` is the command. Each override in `.gate.toml` is there because a runner
 cannot resolve that check from PATH. The `windows-latest` test job is the only place
-Windows-only behaviour runs: `nowindow`'s tests and the case-folded home test in `userdirs`. `portal`'s D-Bus tests
+Windows-only behaviour runs: `nowindow`'s and `lnk`'s tests and the case-folded home test in `userdirs`. `portal`'s D-Bus tests
 and `flatpak`'s fake-`flatpak-spawn` tests run only on Linux (build tags `linux`, `unix`). `crosscompile` vets for
 Windows and for darwin, which is what builds `portal_other.go` and `nowindow_other.go`.
 
@@ -47,3 +49,7 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
 | `userdirs/foldcase_windows.go`, `foldcase_other.go` | Home comparison, case-folded on Windows |
 | `desktopentry/desktopentry.go` | `Value`, `Exec`, `SplitExec` |
 | `nowindow/nowindow_windows.go`, `nowindow_other.go` | `Set` |
+| `hostenv/hostenv.go` | `Environ` and the AppImage scrub |
+| `fonts/fonts.go` | `ParseFcList`, `ParseWindowsNames`; `fonts_linux.go` and `fonts_windows.go` hold `List` |
+| `sysaccent/sysaccent.go` | `FromDWM`, `FromPortal`; `Read` per platform |
+| `lnk/lnk.go` | `Shortcut`, `Files`; `lnk_windows.go` holds `Write` and `Arguments`, `lnk_other.go` the `ErrUnsupported` stubs |
