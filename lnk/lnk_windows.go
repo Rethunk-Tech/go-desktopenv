@@ -63,17 +63,23 @@ func Write(path string, s Shortcut) error {
 	})
 }
 
-// Arguments is the command-line arguments stored in the .lnk at path.
-func Arguments(path string) (string, error) {
-	var arguments string
+// readProp is the string property prop of the .lnk at path.
+func readProp(path, prop string) (string, error) {
+	var out string
 	err := withLink(path, func(link *ole.IDispatch) error {
-		value, err := oleutil.GetProperty(link, "Arguments")
+		value, err := oleutil.GetProperty(link, prop)
 		if err != nil {
 			return err
 		}
 		defer func() { _ = value.Clear() }()
-		arguments = value.ToString()
+		out = value.ToString()
 		return nil
 	})
-	return arguments, err
+	return out, err
 }
+
+// Arguments is the command-line arguments stored in the .lnk at path.
+func Arguments(path string) (string, error) { return readProp(path, "Arguments") }
+
+// Target is the program or file the .lnk at path launches.
+func Target(path string) (string, error) { return readProp(path, "TargetPath") }

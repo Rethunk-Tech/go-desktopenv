@@ -52,4 +52,4 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
 | `hostenv/hostenv.go` | `Environ` and the AppImage scrub |
 | `fonts/fonts.go` | `ParseFcList`, `ParseWindowsNames`; `fonts_linux.go` and `fonts_windows.go` hold `List` |
 | `sysaccent/sysaccent.go` | `FromDWM`, `FromPortal`; `Read` per platform |
-| `lnk/lnk.go` | `Shortcut`, `Files`; `lnk_windows.go` holds `Write` and `Arguments`, `lnk_other.go` the `ErrUnsupported` stubs |
+| `lnk/lnk.go` | `Shortcut`, `Files`; `lnk_windows.go` holds `Write`, `Arguments` and `Target`, `lnk_other.go` the `ErrUnsupported` stubs |
