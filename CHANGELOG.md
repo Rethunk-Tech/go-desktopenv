@@ -6,6 +6,8 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-30
+
 ### Added
 
 - `hostenv.Environ` gives a child process the environment without the variables an AppImage's AppRun injected.
@@ -23,5 +25,6 @@ Notable changes to `go-desktopenv`. The format follows
 - `userdirs` resolves the config and data folders for a home (XDG on Linux, `%APPDATA%` and `%LOCALAPPDATA%` on Windows), the host user's folders from inside a Flatpak, and Flatpak app roots; an environment value counts only when absolute and only for the real home.
 - `portal` calls xdg-desktop-portal: `SetAutostart`, `InstallLauncher`, `UninstallLauncher`, `LauncherExists`, `RetrieveSecret` and `ReadSetting`, each bounded by a context and answering `ErrUnsupported` off Linux.
 
-[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Rethunk-Tech/go-desktopenv/releases/tag/v0.1.0
