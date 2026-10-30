@@ -6,6 +6,11 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `schemehandler` registers a program for URL schemes through a desktop entry and xdg-mime defaults on Linux (honouring AppImage integrators and the Flatpak host) or HKCU classes on Windows, hands each scheme back to its previous handler, forwards a URL to it, and reports who owns a scheme.
+- `nativemessaging` writes, removes and checks native-messaging host manifests for Chromium-family browsers and Firefox on Linux and Windows, and reads and writes the length-prefixed stdio frames with a size limit.
+
 ## [0.2.1] - 2026-10-30
 
 ### Added

@@ -25,6 +25,15 @@ Please do not open a public issue for a suspected vulnerability first.
 - `portal` replies (variants, the secret) are read from the user's own session bus: a reply of the wrong type is
   an error or a zero value, never a panic.
 - `userdirs` must not honour a relative environment path or one describing a different home.
+- `nativemessaging.Read` reads frames a browser extension sends: a length over the caller's limit is refused before
+  any body is allocated, a short stream is an error, and no input panics (`FuzzRead`).
+- `schemehandler.Forward` hands a URL from the command line to the previous handler as one argv element: it is never
+  split, never passed through a shell, and shell metacharacters in it stay literal. Inside a Flatpak it reaches
+  the host's `gio` as a positional argument to a fixed script.
+- `schemehandler` and `nativemessaging` reach host files inside a Flatpak through fixed `sh -c` scripts with every
+  path and body as a positional argument. `DropDefault` removes only lines naming the handler's own entry.
+- `schemehandler` reads other programs' desktop entries and registry values to name and forward to them: malformed
+  ones give an error or an empty name, never a panic.
 
 ## What is out of scope
 
@@ -34,3 +43,6 @@ Please do not open a public issue for a suspected vulnerability first.
   decides what may be run.
 - `RetrieveSecret` returns key material; storing it safely is the caller's job.
 - `SplitExec` reading `%%u` as `%u` is documented behaviour.
+- The handler a user registered before this program is trusted: `Forward` runs it, as the desktop would.
+- Which extensions may connect is the manifest's allow-list, which the caller supplies; the browser enforces it.
+- The size of a URL on the command line is bounded by the OS; capping what the caller does with it is the caller's job.

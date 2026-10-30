@@ -1,18 +1,21 @@
 # AGENTS.md
 
-Nine packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
+Eleven packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
 `flatpak` (sandbox detection and host commands), `userdirs` (per-user folders), `desktopentry` (Desktop Entry
 values), `nowindow` (console-less Windows children), `hostenv` (a child's environment outside an AppImage's),
-`fonts` (installed families), `sysaccent` (the desktop's accent colour) and `lnk` (Windows shortcut files). It imports no consumer package, no GUI toolkit and no
-branding; names, ids and wording are caller arguments. `portal` alone imports godbus; `nowindow`, `fonts` and `sysaccent` import
+`fonts` (installed families), `sysaccent` (the desktop's accent colour), `lnk` (Windows shortcut files),
+`schemehandler` (URL scheme registration) and `nativemessaging` (browser native-messaging hosts). It imports no consumer package, no GUI toolkit and no
+branding; names, ids and wording are caller arguments. `portal` alone imports godbus; `nowindow`, `fonts`, `sysaccent`, `schemehandler` and `nativemessaging` import
 `golang.org/x/sys` and `lnk` imports go-ole, on Windows only, so a consumer of another package gains none of them.
+`schemehandler` and `nativemessaging` import go-safefs and share `internal/hostfile` for the host's files.
 `sysaccent` reads through `portal` on Linux, and `fonts` runs `fc-list` with `hostenv`'s environment.
 
 ## Gate
 
 `gate` is the command. Each override in `.gate.toml` is there because a runner
 cannot resolve that check from PATH. The `windows-latest` test job is the only place
-Windows-only behaviour runs: `nowindow`'s and `lnk`'s tests and the case-folded home test in `userdirs`. `portal`'s D-Bus tests
+Windows-only behaviour runs: `nowindow`'s and `lnk`'s tests, the case-folded home test in `userdirs`, and the
+registry tests of `schemehandler` and `nativemessaging`, which write under a fresh `HKCU\Software\DesktopEnvTest…` key. `portal`'s D-Bus tests
 and `flatpak`'s fake-`flatpak-spawn` tests run only on Linux (build tags `linux`, `unix`). `crosscompile` vets for
 Windows and for darwin, which is what builds `portal_other.go` and `nowindow_other.go`.
 
@@ -35,6 +38,19 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
   characters it holds.
 - `SplitExec` undoes `%%` before the caller sees field codes; a literal `%%u` is indistinguishable from `%u`.
   Accepted: no known entry carries one.
+- `schemehandler` runs `/usr/bin/xdg-mime` by absolute path outside a Flatpak, so its Linux tests swap the
+  Handler's own `run` field for a recorder; that field is per value, not a package seam.
+- `schemehandler`'s desktop entry lists the schemes only while they are claimed, so a desktop that picks a default
+  from advertised types does not pick the app after a Restore. `WriteEntry` compares the whole file, so the entry's
+  text must stay byte-stable across releases or every caller rewrites it on start.
+- An AppImage integrator's entry (GearLever, AppImageLauncher, appimaged) for the same program is the handler, and
+  the app's own entry is removed with its defaults moved there; one whose Exec sets `DESKTOPINTEGRATION` wins.
+- The previous Windows handler is saved as `command\nicon\nname` in `Owner.ID`, so Restore can put back all three.
+- Inside a Flatpak, mimeapps.list and browser manifests are the host's, reached through `flatpak-spawn --host sh`
+  scripts with paths as positional arguments (`internal/hostfile`), and a Flatpak counts as `Packaged`.
+- `nativemessaging` frames use native byte order, as the Chrome and Firefox docs specify; every platform Go builds
+  a browser for is little-endian. `Read` consumes the whole frame before decoding, so a bad body never misaligns the
+  next frame.
 
 ## Files
 
@@ -53,3 +69,9 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
 | `fonts/fonts.go` | `ParseFcList`, `ParseWindowsNames`; `fonts_linux.go` and `fonts_windows.go` hold `List` |
 | `sysaccent/sysaccent.go` | `FromDWM`, `FromPortal`; `Read` per platform |
 | `lnk/lnk.go` | `Shortcut`, `Files`; `lnk_windows.go` holds `Write`, `Arguments` and `Target`, `lnk_other.go` the `ErrUnsupported` stubs |
+| `internal/hostfile/hostfile.go` | The host's files and commands, directly or through `flatpak-spawn --host` |
+| `schemehandler/schemehandler.go` | `Config`, `Entry`, `Owner`, `ErrUnsupported` |
+| `schemehandler/forward.go` | The forward argv for a desktop Exec or a Windows open command, the saved Windows owner |
+| `schemehandler/schemehandler_linux.go`, `_windows.go`, `_other.go` | `Handler` and its calls per platform |
+| `nativemessaging/nativemessaging.go` | `Host`, `Manifest`, `State`, `Status`, `Read`, `Write` |
+| `nativemessaging/nativemessaging_linux.go`, `_windows.go`, `_other.go` | `Install`, `Uninstall`, `Status` per platform |
