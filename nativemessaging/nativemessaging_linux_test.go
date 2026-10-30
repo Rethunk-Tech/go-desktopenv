@@ -183,3 +183,22 @@ func TestFlatpakWritesHostManifestsThatStartTheAppThroughFlatpak(t *testing.T) {
 		}
 	}
 }
+
+func TestRunReplacesTheHostPrograms(t *testing.T) {
+	fakeHome(t)
+	t.Setenv("FLATPAK_ID", "org.example.App")
+	t.Setenv("PATH", "")
+	var calls []string
+	h := testHost("/app/bin/app")
+	h.Run = func(name string, args ...string) (string, error) {
+		calls = append(calls, name+" "+strings.Join(args, " "))
+		return "", errors.New("no such dir")
+	}
+	rows, err := h.Status()
+	if err != nil || len(rows) != 0 {
+		t.Fatalf("status %+v, %v", rows, err)
+	}
+	if len(calls) == 0 || !slices.ContainsFunc(calls, func(c string) bool { return strings.HasPrefix(c, "flatpak-spawn --host sh") }) {
+		t.Fatalf("host programs not routed through Run: %q", calls)
+	}
+}

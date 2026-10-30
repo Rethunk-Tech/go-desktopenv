@@ -35,6 +35,11 @@ type Host struct {
 	AllowedExtensions []string
 	// ManifestDir is the folder Windows keeps the two manifest files in. Unused on Linux.
 	ManifestDir string
+	// Run replaces the program runner on Linux; nil runs the real program. It gets every program the host starts
+	// (inside a Flatpak, "flatpak-spawn" with "--host" first and the script's arguments after) as name and args
+	// exactly as exec would take them, and returns the program's standard output. A non-nil error is a failed run.
+	// Windows ignores it.
+	Run func(name string, args ...string) (string, error)
 }
 
 // Manifest is the host manifest a browser reads; firefox picks that browser's allow-list field.

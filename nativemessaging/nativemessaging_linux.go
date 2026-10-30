@@ -36,7 +36,12 @@ type location struct {
 	manifest string
 }
 
-func host() hostfile.Host { return hostfile.Host{Run: hostfile.Exec} }
+func (h Host) host() hostfile.Host {
+	if h.Run != nil {
+		return hostfile.Host{Run: h.Run}
+	}
+	return hostfile.Host{Run: hostfile.Exec}
+}
 
 // locations are the installed browsers, each with where it looks for this host's manifest.
 func (h Host) locations() ([]location, error) {
@@ -53,7 +58,7 @@ func (h Host) locations() ([]location, error) {
 			dir = filepath.Join(home, b.dir)
 			manifest = filepath.Join(dir, "native-messaging-hosts", h.Name+".json")
 		}
-		if host().IsDir(dir) {
+		if h.host().IsDir(dir) {
 			out = append(out, location{browser: b.name, firefox: b.firefox, manifest: manifest})
 		}
 	}
@@ -108,7 +113,7 @@ func (h Host) Install() error {
 	for _, l := range locs {
 		m, err := h.manifest(exe, l.firefox)
 		if err == nil {
-			err = host().Write(l.manifest, m, 0o644)
+			err = h.host().Write(l.manifest, m, 0o644)
 		}
 		errs = append(errs, err)
 	}
@@ -123,7 +128,7 @@ func (h Host) Uninstall() error {
 	}
 	var errs []error
 	for _, l := range locs {
-		errs = append(errs, host().Remove(l.manifest))
+		errs = append(errs, h.host().Remove(l.manifest))
 	}
 	return errors.Join(errs...)
 }
@@ -140,7 +145,7 @@ func (h Host) Status() ([]Status, error) {
 	}
 	var out []Status
 	for _, l := range locs {
-		b, err := host().Read(l.manifest)
+		b, err := h.host().Read(l.manifest)
 		out = append(out, Status{Browser: l.browser, Manifest: l.manifest, State: stateOf(exe, b, err)})
 	}
 	return out, nil
