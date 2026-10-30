@@ -2,6 +2,7 @@ package hostenv
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -19,5 +20,20 @@ func TestScrubAppImage(t *testing.T) {
 	}
 	if got := scrub(in, "", "/tmp/.mount_x"); !slices.Equal(got, in) {
 		t.Fatalf("outside an AppImage the environment is untouched, got %v", got)
+	}
+}
+
+func TestEnvironScrubsFromProcessEnv(t *testing.T) {
+	t.Setenv("APPIMAGE", "/home/u/App.AppImage")
+	t.Setenv("APPDIR", "/tmp/.mount_env")
+	t.Setenv("HOSTENV_TEST_PATH", "/tmp/.mount_env/bin:/usr/bin")
+	got := Environ()
+	if !slices.Contains(got, "HOSTENV_TEST_PATH=/usr/bin") {
+		t.Errorf("path entry under APPDIR kept: %v", got)
+	}
+	for _, kv := range got {
+		if strings.HasPrefix(kv, "APPDIR=") || strings.HasPrefix(kv, "APPIMAGE=") {
+			t.Errorf("%s survived", kv)
+		}
 	}
 }
