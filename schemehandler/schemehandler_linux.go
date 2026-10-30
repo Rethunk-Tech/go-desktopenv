@@ -40,6 +40,9 @@ func New(cfg Config) (*Handler, error) {
 		return nil, err
 	}
 	h := &Handler{cfg: cfg, home: home, dataHome: userdirs.DataHome(home), run: hostfile.Exec}
+	if cfg.Run != nil {
+		h.run = cfg.Run
+	}
 	dirs := cmp.Or(os.Getenv("XDG_DATA_DIRS"), "/usr/local/share:/usr/share")
 	for d := range strings.SplitSeq(dirs, ":") {
 		h.dataDirs = append(h.dataDirs, filepath.Join(d, "applications"))

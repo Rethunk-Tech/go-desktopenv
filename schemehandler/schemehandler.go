@@ -24,6 +24,11 @@ type Config struct {
 	// Packaged means a package installed DesktopID system-wide: no user entry is written or looked for, and that
 	// entry is the handler. Inside a Flatpak it is always true.
 	Packaged bool
+	// Run replaces the program runner on Linux; nil runs the real program. It gets every program the handler starts,
+	// as name and args exactly as exec would take them (an absolute "/usr/bin/xdg-mime", a bare
+	// "update-desktop-database", the saved owner's own program for Forward; inside a Flatpak "flatpak-spawn" with
+	// "--host" first), and returns the program's standard output. A non-nil error is a failed run. Windows ignores it.
+	Run func(name string, args ...string) (string, error)
 }
 
 // Entry is the desktop entry's keys besides Exec and MimeType. An empty Comment, Icon, StartupWMClass or list is

@@ -409,3 +409,41 @@ func TestForwardRunsThePreviousEntrysExec(t *testing.T) {
 		t.Fatalf("no previous handler: %v", err)
 	}
 }
+
+func TestConfigRunReplacesEveryProgram(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", filepath.Join(dir, "home"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(dir, "data"))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
+	t.Setenv("XDG_DATA_DIRS", filepath.Join(dir, "system"))
+	t.Setenv("FLATPAK_ID", "")
+	t.Setenv("PATH", "")
+	r := &recorder{byMime: map[string]string{}}
+	cfg := testConfig()
+	cfg.Run = r.run
+	h, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Register("nxm"); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.SetDefault("application/x-example"); err != nil {
+		t.Fatal(err)
+	}
+	write(t, filepath.Join(dir, "config", "mimeapps.list"), "[Default Applications]\nx-scheme-handler/nxm="+appID+"\n")
+	if err := h.DropDefault("x-scheme-handler/nxm"); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"update-desktop-database " + h.apps(),
+		xdgMime + " default " + appID + " x-scheme-handler/nxm",
+		xdgMime + " default " + appID + " application/x-example",
+	}
+	if !slices.Equal(r.calls, want) {
+		t.Fatalf("calls %q, want %q", r.calls, want)
+	}
+	if got := read(t, filepath.Join(dir, "config", "mimeapps.list")); strings.Contains(got, "nxm") {
+		t.Fatalf("DropDefault left %q", got)
+	}
+}
