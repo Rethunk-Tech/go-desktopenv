@@ -6,6 +6,13 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-30
+
+### Added
+
+- `schemehandler.Config.Run` replaces the program runner (xdg-mime, update-desktop-database, the previous owner's program) so a consumer's tests can record the calls; nil keeps the real one.
+- `nativemessaging.Host.Run` does the same for the programs the host manifests' Flatpak path runs.
+
 ## [0.3.0] - 2026-10-30
 
 ### Added
@@ -38,7 +45,8 @@ Notable changes to `go-desktopenv`. The format follows
 - `userdirs` resolves the config and data folders for a home (XDG on Linux, `%APPDATA%` and `%LOCALAPPDATA%` on Windows), the host user's folders from inside a Flatpak, and Flatpak app roots; an environment value counts only when absolute and only for the real home.
 - `portal` calls xdg-desktop-portal: `SetAutostart`, `InstallLauncher`, `UninstallLauncher`, `LauncherExists`, `RetrieveSecret` and `ReadSetting`, each bounded by a context and answering `ErrUnsupported` off Linux.
 
-[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.1.0...v0.2.0
