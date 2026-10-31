@@ -6,6 +6,12 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-30
+
+### Added
+
+- `locale.Language` reads the user's UI language as a tag such as `de-DE` (the Windows preferred UI language, or `LC_ALL`, `LC_MESSAGES` and `LANG` elsewhere), and `locale.FromPOSIX` converts a POSIX locale string to a tag.
+
 ## [0.3.1] - 2026-10-30
 
 ### Added
@@ -45,7 +51,8 @@ Notable changes to `go-desktopenv`. The format follows
 - `userdirs` resolves the config and data folders for a home (XDG on Linux, `%APPDATA%` and `%LOCALAPPDATA%` on Windows), the host user's folders from inside a Flatpak, and Flatpak app roots; an environment value counts only when absolute and only for the real home.
 - `portal` calls xdg-desktop-portal: `SetAutostart`, `InstallLauncher`, `UninstallLauncher`, `LauncherExists`, `RetrieveSecret` and `ReadSetting`, each bounded by a context and answering `ErrUnsupported` off Linux.
 
-[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.2.0...v0.2.1
