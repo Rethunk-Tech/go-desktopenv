@@ -1,6 +1,7 @@
 package hostenv
 
 import (
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -24,6 +25,9 @@ func TestScrubAppImage(t *testing.T) {
 }
 
 func TestEnvironScrubsFromProcessEnv(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("only a Linux AppImage injects these variables, so Environ scrubs them only there")
+	}
 	t.Setenv("APPIMAGE", "/home/u/App.AppImage")
 	t.Setenv("APPDIR", "/tmp/.mount_env")
 	t.Setenv("HOSTENV_TEST_PATH", "/tmp/.mount_env/bin:/usr/bin")
