@@ -1,11 +1,11 @@
 # AGENTS.md
 
-Eleven packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
+Twelve packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
 `flatpak` (sandbox detection and host commands), `userdirs` (per-user folders), `desktopentry` (Desktop Entry
 values), `nowindow` (console-less Windows children), `hostenv` (a child's environment outside an AppImage's),
-`fonts` (installed families), `sysaccent` (the desktop's accent colour), `lnk` (Windows shortcut files),
+`fonts` (installed families), `sysaccent` (the desktop's accent colour), `locale` (the UI language), `lnk` (Windows shortcut files),
 `schemehandler` (URL scheme registration) and `nativemessaging` (browser native-messaging hosts). It imports no consumer package, no GUI toolkit and no
-branding; names, ids and wording are caller arguments. `portal` alone imports godbus; `nowindow`, `fonts`, `sysaccent`, `schemehandler` and `nativemessaging` import
+branding; names, ids and wording are caller arguments. `portal` alone imports godbus; `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler` and `nativemessaging` import
 `golang.org/x/sys` and `lnk` imports go-ole, on Windows only, so a consumer of another package gains none of them.
 `schemehandler` and `nativemessaging` import go-safefs and share `internal/hostfile` for the host's files.
 `sysaccent` reads through `portal` on Linux, and `fonts` runs `fc-list` with `hostenv`'s environment.
@@ -15,7 +15,7 @@ branding; names, ids and wording are caller arguments. `portal` alone imports go
 `gate` is the command. Each override in `.gate.toml` is there because a runner
 cannot resolve that check from PATH. The `windows-latest` test job is the only place
 Windows-only behaviour runs: `nowindow`'s and `lnk`'s tests, the case-folded home test in `userdirs`, and the
-registry tests of `schemehandler` and `nativemessaging`, which write under a fresh `HKCU\Software\DesktopEnvTest…` key. `portal`'s D-Bus tests
+`locale`'s Windows tag-form test, the registry tests of `schemehandler` and `nativemessaging`, which write under a fresh `HKCU\Software\DesktopEnvTest…` key. `portal`'s D-Bus tests
 and `flatpak`'s fake-`flatpak-spawn` tests run only on Linux (build tags `linux`, `unix`). `crosscompile` vets for
 Windows and for darwin, which is what builds `portal_other.go` and `nowindow_other.go`.
 
@@ -68,6 +68,7 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
 | `hostenv/hostenv.go` | `Environ` and the AppImage scrub |
 | `fonts/fonts.go` | `ParseFcList`, `ParseWindowsNames`; `fonts_linux.go` and `fonts_windows.go` hold `List` |
 | `sysaccent/sysaccent.go` | `FromDWM`, `FromPortal`; `Read` per platform |
+| `locale/locale.go` | `FromPOSIX`; `locale_other.go` and `locale_windows.go` hold `Language` |
 | `lnk/lnk.go` | `Shortcut`, `Files`; `lnk_windows.go` holds `Write`, `Arguments` and `Target`, `lnk_other.go` the `ErrUnsupported` stubs |
 | `internal/hostfile/hostfile.go` | The host's files and commands, directly or through `flatpak-spawn --host` |
 | `schemehandler/schemehandler.go` | `Config`, `Entry`, `Owner`, `ErrUnsupported` |
