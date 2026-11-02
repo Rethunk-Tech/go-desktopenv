@@ -27,8 +27,8 @@ var styleWords = []string{
 func ParseWindowsNames(names []string) []string {
 	var families []string
 	for _, n := range names {
-		if i := strings.LastIndex(n, " ("); i >= 0 {
-			n = n[:i]
+		if before, _, found := strings.CutLast(n, " ("); found {
+			n = before
 		}
 		for part := range strings.SplitSeq(n, " & ") {
 			words := strings.Fields(part)
