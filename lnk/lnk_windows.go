@@ -15,9 +15,8 @@ func withLink(path string, fn func(*ole.IDispatch) error) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	if err := ole.CoInitializeEx(0, ole.COINIT_APARTMENTTHREADED); err != nil {
-		var oleErr *ole.OleError
 		// S_FALSE means COM was already initialised on this thread, which is fine.
-		if !errors.As(err, &oleErr) || oleErr.Code() != 1 {
+		if oleErr, ok := errors.AsType[*ole.OleError](err); !ok || oleErr.Code() != 1 {
 			return err
 		}
 	}

@@ -213,8 +213,7 @@ func launcherExists(ctx context.Context, conn *dbus.Conn, id string) (bool, erro
 		return true, nil
 	}
 	// The portal reads the launcher from its own folder and reports a missing one as GLib's G_FILE_ERROR_NOENT (4).
-	var dbusErr dbus.Error
-	if errors.As(err, &dbusErr) && strings.HasSuffix(dbusErr.Name, "_g_2dfile_2derror_2dquark.Code4") {
+	if dbusErr, ok := errors.AsType[dbus.Error](err); ok && strings.HasSuffix(dbusErr.Name, "_g_2dfile_2derror_2dquark.Code4") {
 		return false, nil
 	}
 	return false, err
@@ -267,8 +266,7 @@ func ReadSetting(ctx context.Context, namespace, key string) (any, error) {
 	defer func() { _ = conn.Close() }()
 	var out dbus.Variant
 	err = call(ctx, conn, "org.freedesktop.portal.Settings.Read", namespace, key).Store(&out)
-	var dbusErr dbus.Error
-	if errors.As(err, &dbusErr) && dbusErr.Name == notFoundIf {
+	if dbusErr, ok := errors.AsType[dbus.Error](err); ok && dbusErr.Name == notFoundIf {
 		return nil, ErrNotFound
 	}
 	if err != nil {

@@ -73,7 +73,7 @@ func (h Host) Read(path string) ([]byte, error) {
 		return safefs.ReadFile(path)
 	}
 	out, err := h.Command("sh", "-c", `[ -e "$1" ] || exit 3; cat "$1"`, "sh", path)
-	if exit := (*exec.ExitError)(nil); errors.As(err, &exit) && exit.ExitCode() == missing {
+	if exit, ok := errors.AsType[*exec.ExitError](err); ok && exit.ExitCode() == missing {
 		return nil, fs.ErrNotExist
 	}
 	return []byte(out), err
