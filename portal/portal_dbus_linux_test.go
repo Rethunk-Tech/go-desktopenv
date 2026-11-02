@@ -185,7 +185,7 @@ func (f *fake) set(change func(*fake)) {
 
 func ctx5(t *testing.T) context.Context {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	t.Cleanup(cancel)
 	return ctx
 }
@@ -237,7 +237,7 @@ func TestAutostartNotGrantedIsNotAllowed(t *testing.T) {
 func TestCancelledContextClosesTheRequest(t *testing.T) {
 	f := startFake(t)
 	f.set(func(f *fake) { f.silent = true })
-	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
 	defer cancel()
 	if err := SetAutostart(ctx, Autostart{Enable: true}); !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("got %v", err)
@@ -254,7 +254,7 @@ func TestCancelledContextClosesTheRequest(t *testing.T) {
 
 func TestContextBoundsADirectCall(t *testing.T) {
 	startFake(t)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	start := time.Now()
 	if _, err := LauncherExists(ctx, "x.desktop"); !errors.Is(err, context.Canceled) {

@@ -1,7 +1,6 @@
 package hostfile
 
 import (
-	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -93,7 +92,7 @@ func TestHostOutsideFlatpakUsesFiles(t *testing.T) {
 
 func TestHostInsideFlatpakRunsHostScripts(t *testing.T) {
 	t.Setenv("FLATPAK_ID", "org.example.App")
-	exit3 := exec.CommandContext(context.Background(), "sh", "-c", "exit 3").Run()
+	exit3 := exec.CommandContext(t.Context(), "sh", "-c", "exit 3").Run()
 	var calls [][]string
 	reply, fail := "out\n", error(nil)
 	h := Host{Run: func(name string, args ...string) (string, error) {

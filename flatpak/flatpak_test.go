@@ -1,7 +1,6 @@
 package flatpak
 
 import (
-	"context"
 	"reflect"
 	"testing"
 )
@@ -33,11 +32,11 @@ func TestInside(t *testing.T) {
 func TestCommandContextHostTerm(t *testing.T) {
 	t.Parallel()
 	name, args := HostArgv("", nil, "sleep", "1")
-	cmd := CommandContext(context.Background(), name, args...)
+	cmd := CommandContext(t.Context(), name, args...)
 	if cmd.Cancel == nil || cmd.WaitDelay == 0 {
 		t.Fatalf("host command lacks Cancel/WaitDelay: %v %v", cmd.Cancel == nil, cmd.WaitDelay)
 	}
-	if plain := CommandContext(context.Background(), "sleep", "1"); plain.WaitDelay != 0 {
+	if plain := CommandContext(t.Context(), "sleep", "1"); plain.WaitDelay != 0 {
 		t.Fatal("non-host command should keep the default kill")
 	}
 }

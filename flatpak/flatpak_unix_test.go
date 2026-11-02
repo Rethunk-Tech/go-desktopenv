@@ -3,7 +3,6 @@
 package flatpak
 
 import (
-	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -45,7 +44,7 @@ func TestHostLookPath(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			fakeSpawn(t, lookPathScript(c.answer, c.status))
-			got, err := HostLookPath(context.Background(), "steam")
+			got, err := HostLookPath(t.Context(), "steam")
 			if c.found != (err == nil) || got != c.want || (!c.found && !errors.Is(err, exec.ErrNotFound)) {
 				t.Fatalf("HostLookPath = %q, %v", got, err)
 			}
@@ -56,7 +55,7 @@ func TestHostLookPath(t *testing.T) {
 func TestCommandSpawnsOnTheHostOnlyInsideAFlatpak(t *testing.T) {
 	fakeSpawn(t, `echo "$@"`+"\n")
 	t.Setenv("FLATPAK_ID", "org.example.App")
-	cmd := Command(context.Background(), "steam", "-silent", "a b")
+	cmd := Command(t.Context(), "steam", "-silent", "a b")
 	if want := []string{"flatpak-spawn", "--host", "steam", "-silent", "a b"}; !reflect.DeepEqual(cmd.Args, want) {
 		t.Fatalf("inside: %q", cmd.Args)
 	}
@@ -66,7 +65,7 @@ func TestCommandSpawnsOnTheHostOnlyInsideAFlatpak(t *testing.T) {
 	}
 
 	t.Setenv("FLATPAK_ID", "")
-	cmd = Command(context.Background(), "steam", "-silent")
+	cmd = Command(t.Context(), "steam", "-silent")
 	if want := []string{"steam", "-silent"}; !reflect.DeepEqual(cmd.Args, want) {
 		t.Fatalf("outside: %q", cmd.Args)
 	}
