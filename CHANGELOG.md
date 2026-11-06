@@ -6,6 +6,8 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-05
+
 ### Added
 
 - `portal.AddNotification` and `portal.RemoveNotification` call the Notification portal, so an app can notify without the `org.freedesktop.Notifications` talk-name.
@@ -55,7 +57,8 @@ Notable changes to `go-desktopenv`. The format follows
 - `userdirs` resolves the config and data folders for a home (XDG on Linux, `%APPDATA%` and `%LOCALAPPDATA%` on Windows), the host user's folders from inside a Flatpak, and Flatpak app roots; an environment value counts only when absolute and only for the real home.
 - `portal` calls xdg-desktop-portal: `SetAutostart`, `InstallLauncher`, `UninstallLauncher`, `LauncherExists`, `RetrieveSecret` and `ReadSetting`, each bounded by a context and answering `ErrUnsupported` off Linux.
 
-[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.2.1...v0.3.0
