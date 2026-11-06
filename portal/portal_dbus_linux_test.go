@@ -65,6 +65,7 @@ type fake struct {
 	entry    string // Install's entry, recorded
 	closed   chan dbus.ObjectPath
 	seen     map[string]map[string]dbus.Variant // request method -> options
+	notified map[string]map[string]dbus.Variant // Notification id -> options, until removed
 }
 
 type (
@@ -72,6 +73,7 @@ type (
 	launcher   fake
 	secretIf   fake
 	settings   fake
+	notifyObj  fake
 	requestObj struct {
 		f      *fake
 		handle dbus.ObjectPath
@@ -86,12 +88,13 @@ func startFake(t *testing.T) *fake {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = conn.Close() })
-	f := &fake{conn: conn, closed: make(chan dbus.ObjectPath, 4), seen: map[string]map[string]dbus.Variant{}}
+	f := &fake{conn: conn, closed: make(chan dbus.ObjectPath, 4), seen: map[string]map[string]dbus.Variant{}, notified: map[string]map[string]dbus.Variant{}}
 	for iface, obj := range map[string]any{
 		"org.freedesktop.portal.Background":      (*background)(f),
 		"org.freedesktop.portal.DynamicLauncher": (*launcher)(f),
 		"org.freedesktop.portal.Secret":          (*secretIf)(f),
 		"org.freedesktop.portal.Settings":        (*settings)(f),
+		"org.freedesktop.portal.Notification":    (*notifyObj)(f),
 	} {
 		if err := conn.Export(obj, objectPath, iface); err != nil {
 			t.Fatal(err)
@@ -175,6 +178,20 @@ func (s *settings) Read(string, string) (dbus.Variant, *dbus.Error) {
 		return dbus.Variant{}, &dbus.Error{Name: notFoundIf}
 	}
 	return (*fake)(s).setting, nil
+}
+
+func (n *notifyObj) AddNotification(id string, options map[string]dbus.Variant) *dbus.Error {
+	(*fake)(n).mu.Lock()
+	defer (*fake)(n).mu.Unlock()
+	(*fake)(n).notified[id] = options
+	return nil
+}
+
+func (n *notifyObj) RemoveNotification(id string) *dbus.Error {
+	(*fake)(n).mu.Lock()
+	defer (*fake)(n).mu.Unlock()
+	delete((*fake)(n).notified, id)
+	return nil
 }
 
 func (f *fake) set(change func(*fake)) {
@@ -327,6 +344,50 @@ func TestReadSetting(t *testing.T) {
 	}
 }
 
+func TestAddAndRemoveNotification(t *testing.T) {
+	f := startFake(t)
+	err := AddNotification(ctx5(t), Notification{ID: "crash", Title: "Mortar", Body: "It stopped", Priority: PriorityUrgent, IconPNG: []byte{1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	got := f.notified["crash"]
+	f.mu.Unlock()
+	if got["title"].Value() != "Mortar" || got["body"].Value() != "It stopped" || got["priority"].Value() != "urgent" {
+		t.Fatalf("options %v", got)
+	}
+	if icon, _ := got["icon"].Value().([]any); len(icon) != 2 || icon[0] != "bytes" {
+		t.Fatalf("icon %v", got["icon"])
+	}
+	if err := AddNotification(ctx5(t), Notification{ID: "bare", Title: "T"}); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	bare := f.notified["bare"]
+	f.mu.Unlock()
+	if len(bare) != 1 {
+		t.Errorf("empty optional fields were sent: %v", bare)
+	}
+	if err := RemoveNotification(ctx5(t), "crash"); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	_, still := f.notified["crash"]
+	f.mu.Unlock()
+	if still {
+		t.Error("notification was not removed")
+	}
+}
+
+func TestAddNotificationNeedsAnIDAndTitle(t *testing.T) {
+	startFake(t)
+	for _, n := range []Notification{{Title: "T"}, {ID: "x"}} {
+		if err := AddNotification(ctx5(t), n); err == nil {
+			t.Errorf("want error for %+v", n)
+		}
+	}
+}
+
 // TestLivePortal calls the real Secret portal, which answers only a sandboxed caller with an app id: run it by hand
 // inside a Flatpak with DESKTOPENV_LIVE_PORTAL=1.
 func TestLivePortal(t *testing.T) {
@@ -340,5 +401,19 @@ func TestLivePortal(t *testing.T) {
 	b, err := RetrieveSecret(ctx5(t))
 	if err != nil || string(a) != string(b) {
 		t.Fatalf("second call must return the same secret: %v", err)
+	}
+}
+
+// TestLiveNotification shows and withdraws a notification through the real portal on the session bus.
+func TestLiveNotification(t *testing.T) {
+	if os.Getenv("DESKTOPENV_LIVE_PORTAL") != "1" {
+		t.Skip("set DESKTOPENV_LIVE_PORTAL=1 to call the real Notification portal")
+	}
+	n := Notification{ID: "go-desktopenv-live", Title: "go-desktopenv", Body: "live portal check", Priority: PriorityLow}
+	if err := AddNotification(ctx5(t), n); err != nil {
+		t.Fatal(err)
+	}
+	if err := RemoveNotification(ctx5(t), n.ID); err != nil {
+		t.Fatal(err)
 	}
 }

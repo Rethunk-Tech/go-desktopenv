@@ -6,6 +6,10 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `portal.AddNotification` and `portal.RemoveNotification` call the Notification portal, so an app can notify without the `org.freedesktop.Notifications` talk-name.
+
 ## [0.4.0] - 2026-10-30
 
 ### Added

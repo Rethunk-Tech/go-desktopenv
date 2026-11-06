@@ -30,3 +30,23 @@ type Launcher struct {
 	Comment    string   // optional
 	Categories []string // optional
 }
+
+// Priority is a notification's urgency, as the Notification portal names it.
+type Priority string
+
+// The portal's four priorities. Urgent notifications stay until dismissed on most desktops.
+const (
+	PriorityLow    Priority = "low"
+	PriorityNormal Priority = "normal"
+	PriorityHigh   Priority = "high"
+	PriorityUrgent Priority = "urgent"
+)
+
+// Notification is a desktop notification for the Notification portal.
+type Notification struct {
+	ID       string   // names the notification; adding the same ID again replaces it
+	Title    string   // required by the portal
+	Body     string   // optional
+	Priority Priority // empty sends none, which the portal treats as normal
+	IconPNG  []byte   // optional
+}

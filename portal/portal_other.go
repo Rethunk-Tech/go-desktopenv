@@ -21,3 +21,9 @@ func RetrieveSecret(context.Context) ([]byte, error) { return nil, ErrUnsupporte
 
 // ReadSetting returns ErrUnsupported.
 func ReadSetting(context.Context, string, string) (any, error) { return nil, ErrUnsupported }
+
+// AddNotification returns ErrUnsupported.
+func AddNotification(context.Context, Notification) error { return ErrUnsupported }
+
+// RemoveNotification returns ErrUnsupported.
+func RemoveNotification(context.Context, string) error { return ErrUnsupported }

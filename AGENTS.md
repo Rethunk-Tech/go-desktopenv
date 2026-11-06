@@ -27,6 +27,7 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
   every dialog. Every direct method call goes through `CallWithContext` (`call`), and `request` is the single path
   for calls answered through a Request object.
 - `request` subscribes to the Response before calling, because the portal may answer before the call returns.
+- `AddNotification` and `RemoveNotification` are plain method calls: the Notification portal answers no Request.
 - Each portal call opens its own connection, so the handle token needs only to be fresh, not coordinated.
 - `portal/errors.go` carries no build tag, so Windows and darwin builds declare the same sentinels.
 - `userdirs` decides by `home`, never by `runtime.GOOS`: the caller knows which layout it is resolving. The
@@ -57,7 +58,7 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
 | File | Holds |
 | --- | --- |
 | `portal/doc.go` | Package documentation |
-| `portal/errors.go` | The sentinel errors and the `Autostart` and `Launcher` types, on every platform |
+| `portal/errors.go` | The sentinel errors and the `Autostart`, `Launcher` and `Notification` types, on every platform |
 | `portal/portal_linux.go` | The D-Bus calls, the Request wait, the launcher entry builder |
 | `portal/portal_other.go` | The same signatures returning `ErrUnsupported` |
 | `flatpak/flatpak.go` | `Inside`, `HostArgv`, `Command`, `CommandContext`, `HostLookPath` |

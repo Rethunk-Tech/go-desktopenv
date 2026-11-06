@@ -20,6 +20,7 @@ const (
 	busName    = "org.freedesktop.portal.Desktop"
 	objectPath = "/org/freedesktop/portal/desktop"
 	launcherIf = "org.freedesktop.portal.DynamicLauncher"
+	notifyIf   = "org.freedesktop.portal.Notification"
 	requestIf  = "org.freedesktop.portal.Request"
 	notFoundIf = "org.freedesktop.portal.Error.NotFound"
 )
@@ -139,11 +140,7 @@ func InstallLauncher(ctx context.Context, l Launcher) error {
 		return err
 	}
 	defer func() { _ = conn.Close() }()
-	// A serialized GBytesIcon: ("bytes", <PNG data>).
-	icon := dbus.MakeVariant(struct {
-		Kind string
-		Data dbus.Variant
-	}{"bytes", dbus.MakeVariant(l.IconPNG)})
+	icon := bytesIcon(l.IconPNG)
 	handleToken := newToken("launcher")
 	results, err := request(ctx, conn, launcherIf+".PrepareInstall", handleToken, "", l.Name, icon,
 		map[string]dbus.Variant{
@@ -162,6 +159,14 @@ func InstallLauncher(ctx context.Context, l Launcher) error {
 	}
 	return call(ctx, conn, launcherIf+".Install", token, l.ID, desktopEntry(l),
 		map[string]dbus.Variant{}).Err
+}
+
+// bytesIcon is a serialized GBytesIcon: ("bytes", <PNG data>).
+func bytesIcon(png []byte) dbus.Variant {
+	return dbus.MakeVariant(struct {
+		Kind string
+		Data dbus.Variant
+	}{"bytes", dbus.MakeVariant(png)})
 }
 
 // desktopEntry is the launcher's Desktop Entry file. The portal rewrites Exec to run the launcher inside the sandbox.
@@ -283,4 +288,38 @@ func unwrap(v any) any {
 		}
 		v = inner.Value()
 	}
+}
+
+// AddNotification shows n through the Notification portal, which needs no talk-name on the notification service.
+// The portal answers no Request: it returns once it has accepted the notification.
+func AddNotification(ctx context.Context, n Notification) error {
+	if n.ID == "" || n.Title == "" {
+		return errors.New("portal: notification needs an id and a title")
+	}
+	conn, err := dbus.ConnectSessionBus()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = conn.Close() }()
+	options := map[string]dbus.Variant{"title": dbus.MakeVariant(n.Title)}
+	if n.Body != "" {
+		options["body"] = dbus.MakeVariant(n.Body)
+	}
+	if n.Priority != "" {
+		options["priority"] = dbus.MakeVariant(string(n.Priority))
+	}
+	if len(n.IconPNG) > 0 {
+		options["icon"] = bytesIcon(n.IconPNG)
+	}
+	return call(ctx, conn, notifyIf+".AddNotification", n.ID, options).Err
+}
+
+// RemoveNotification withdraws a notification AddNotification showed; the portal ignores an unknown id.
+func RemoveNotification(ctx context.Context, id string) error {
+	conn, err := dbus.ConnectSessionBus()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = conn.Close() }()
+	return call(ctx, conn, notifyIf+".RemoveNotification", id).Err
 }
