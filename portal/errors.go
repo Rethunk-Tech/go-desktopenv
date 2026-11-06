@@ -49,4 +49,27 @@ type Notification struct {
 	Body     string   // optional
 	Priority Priority // empty sends none, which the portal treats as normal
 	IconPNG  []byte   // optional
+
+	// DefaultAction runs when the user clicks the notification. Without the "app." prefix it arrives through
+	// OnNotificationAction; with it the portal activates the app's exported action instead.
+	DefaultAction       string
+	DefaultActionTarget string // sent as a string variant with DefaultAction; empty sends none
+	Buttons             []NotificationButton
+}
+
+// NotificationButton is an action button under a notification.
+type NotificationButton struct {
+	Label  string // user-visible
+	Action string // same rules as Notification.DefaultAction
+	Target string // sent as a string variant; empty sends none
+}
+
+// NotificationAction is the user's activation of a notification's default action or a button, as the portal's
+// ActionInvoked signal reports it.
+type NotificationAction struct {
+	ID              string // the Notification.ID
+	Action          string
+	Target          string // empty when the notification set none
+	ActivationToken string // XDG Activation token for focusing a window; empty from portals older than version 2
+	Response        string // text of a purpose-based action such as im.reply-with-text; empty otherwise
 }

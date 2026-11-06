@@ -27,3 +27,8 @@ func AddNotification(context.Context, Notification) error { return ErrUnsupporte
 
 // RemoveNotification returns ErrUnsupported.
 func RemoveNotification(context.Context, string) error { return ErrUnsupported }
+
+// OnNotificationAction returns ErrUnsupported.
+func OnNotificationAction(context.Context, func(NotificationAction)) (func(), error) {
+	return nil, ErrUnsupported
+}

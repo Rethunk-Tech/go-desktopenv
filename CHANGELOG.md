@@ -6,6 +6,10 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `portal.Notification` takes `DefaultAction`, `DefaultActionTarget` and `Buttons`, and `portal.OnNotificationAction` reports the portal's `ActionInvoked` signal (a click on a non-exported default action or button) to a callback until its context ends or the returned stop is called.
+
 ## [0.5.0] - 2026-11-05
 
 ### Added

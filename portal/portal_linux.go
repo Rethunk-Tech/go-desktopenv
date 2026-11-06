@@ -311,7 +311,102 @@ func AddNotification(ctx context.Context, n Notification) error {
 	if len(n.IconPNG) > 0 {
 		options["icon"] = bytesIcon(n.IconPNG)
 	}
+	if n.DefaultAction != "" {
+		options["default-action"] = dbus.MakeVariant(n.DefaultAction)
+		if n.DefaultActionTarget != "" {
+			options["default-action-target"] = dbus.MakeVariant(n.DefaultActionTarget)
+		}
+	}
+	if len(n.Buttons) > 0 {
+		options["buttons"] = dbus.MakeVariant(buttonDicts(n.Buttons))
+	}
 	return call(ctx, conn, notifyIf+".AddNotification", n.ID, options).Err
+}
+
+// buttonDicts encodes buttons as the portal's aa{sv}; its spec makes label and action mandatory for a button
+// without a purpose (https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Notification.html).
+func buttonDicts(buttons []NotificationButton) []map[string]dbus.Variant {
+	out := make([]map[string]dbus.Variant, 0, len(buttons))
+	for _, b := range buttons {
+		d := map[string]dbus.Variant{"label": dbus.MakeVariant(b.Label), "action": dbus.MakeVariant(b.Action)}
+		if b.Target != "" {
+			d["target"] = dbus.MakeVariant(b.Target)
+		}
+		out = append(out, d)
+	}
+	return out
+}
+
+// OnNotificationAction calls fn, on its own goroutine, for each ActionInvoked signal the portal sends: a click on a
+// notification's non-exported default action or button. Actions named "app.…" are exported and the portal activates
+// them through D-Bus activation instead, so they never arrive here. It holds one session-bus connection until ctx
+// ends or the returned stop is called; stop is idempotent and does not wait for a running fn.
+func OnNotificationAction(ctx context.Context, fn func(NotificationAction)) (func(), error) {
+	conn, err := dbus.ConnectSessionBus()
+	if err != nil {
+		return nil, err
+	}
+	// Matching the sender keeps another bus client from forging a click.
+	if err := conn.AddMatchSignal(
+		dbus.WithMatchSender(busName),
+		dbus.WithMatchObjectPath(objectPath),
+		dbus.WithMatchInterface(notifyIf),
+		dbus.WithMatchMember("ActionInvoked"),
+	); err != nil {
+		_ = conn.Close()
+		return nil, err
+	}
+	signals := make(chan *dbus.Signal, 8)
+	conn.Signal(signals)
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		defer func() { _ = conn.Close() }()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case sig, ok := <-signals:
+				if !ok {
+					return
+				}
+				if a, ok := decodeAction(sig.Body); ok {
+					fn(a)
+				}
+			}
+		}
+	}()
+	return cancel, nil
+}
+
+// decodeAction reads ActionInvoked's (id, action, parameter). The parameter array holds the button's target only when
+// the notification set one, then the platform-data vardict, then a purpose response; a leading map therefore means no
+// target.
+func decodeAction(body []any) (NotificationAction, bool) {
+	if len(body) < 3 {
+		return NotificationAction{}, false
+	}
+	id, ok1 := body[0].(string)
+	action, ok2 := body[1].(string)
+	params, ok3 := body[2].([]dbus.Variant)
+	if !ok1 || !ok2 || !ok3 {
+		return NotificationAction{}, false
+	}
+	a := NotificationAction{ID: id, Action: action}
+	if len(params) > 0 {
+		if _, isMap := params[0].Value().(map[string]dbus.Variant); !isMap {
+			a.Target = fmt.Sprint(unwrap(params[0]))
+			params = params[1:]
+		}
+	}
+	if len(params) > 0 {
+		if pd, ok := params[0].Value().(map[string]dbus.Variant); ok {
+			a.ActivationToken, _ = pd["activation-token"].Value().(string)
+		}
+	}
+	if len(params) > 1 {
+		a.Response, _ = params[1].Value().(string)
+	}
+	return a, true
 }
 
 // RemoveNotification withdraws a notification AddNotification showed; the portal ignores an unknown id.

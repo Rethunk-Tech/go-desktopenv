@@ -379,6 +379,58 @@ func TestAddAndRemoveNotification(t *testing.T) {
 	}
 }
 
+func TestNotificationActionOptions(t *testing.T) {
+	f := startFake(t)
+	err := AddNotification(ctx5(t), Notification{
+		ID: "n", Title: "T", DefaultAction: "open", DefaultActionTarget: "x",
+		Buttons: []NotificationButton{{Label: "Reply", Action: "reply", Target: "y"}, {Label: "Mute", Action: "mute"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	got := f.notified["n"]
+	f.mu.Unlock()
+	if got["default-action"].Value() != "open" || got["default-action-target"].Value() != "x" {
+		t.Fatalf("default action %v", got)
+	}
+	buttons, _ := got["buttons"].Value().([]map[string]dbus.Variant)
+	if len(buttons) != 2 || buttons[0]["label"].Value() != "Reply" || buttons[0]["action"].Value() != "reply" ||
+		buttons[0]["target"].Value() != "y" || len(buttons[1]) != 2 {
+		t.Fatalf("buttons %v", got["buttons"])
+	}
+}
+
+func TestOnNotificationAction(t *testing.T) {
+	f := startFake(t)
+	got := make(chan NotificationAction, 4)
+	stop, err := OnNotificationAction(ctx5(t), func(a NotificationAction) { got <- a })
+	if err != nil {
+		t.Fatal(err)
+	}
+	pd := map[string]dbus.Variant{"activation-token": dbus.MakeVariant("tok")}
+	emit := func(params ...dbus.Variant) {
+		t.Helper()
+		if err := f.conn.Emit(objectPath, notifyIf+".ActionInvoked", "n", "open", params); err != nil {
+			t.Fatal(err)
+		}
+	}
+	emit(dbus.MakeVariant("x"), dbus.MakeVariant(pd))
+	if a := <-got; a != (NotificationAction{ID: "n", Action: "open", Target: "x", ActivationToken: "tok"}) {
+		t.Fatalf("with target: %+v", a)
+	}
+	emit(dbus.MakeVariant(pd), dbus.MakeVariant("hi"))
+	if a := <-got; a != (NotificationAction{ID: "n", Action: "open", ActivationToken: "tok", Response: "hi"}) {
+		t.Fatalf("with response: %+v", a)
+	}
+	emit()
+	if a := <-got; a != (NotificationAction{ID: "n", Action: "open"}) {
+		t.Fatalf("version 1: %+v", a)
+	}
+	stop()
+	stop()
+}
+
 func TestAddNotificationNeedsAnIDAndTitle(t *testing.T) {
 	startFake(t)
 	for _, n := range []Notification{{Title: "T"}, {ID: "x"}} {

@@ -23,7 +23,7 @@ A worked example and the contracts: [HUMANS.md](HUMANS.md).
 
 ## Features
 
-- `portal`: autostart, launchers, the per-app secret, desktop settings and notifications, each bounded by your context
+- `portal`: autostart, launchers, the per-app secret, desktop settings and notifications (with click and button actions), each bounded by your context
 - `flatpak`: detect a sandbox, run or build a command for the host, end the host child on cancel
 - `userdirs`: config and data folders per home, honouring only absolute environment values for the real home
 - `desktopentry`: escape, build and read Desktop Entry `Exec=` values

@@ -28,6 +28,7 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
   for calls answered through a Request object.
 - `request` subscribes to the Response before calling, because the portal may answer before the call returns.
 - `AddNotification` and `RemoveNotification` are plain method calls: the Notification portal answers no Request.
+- `OnNotificationAction` is the one portal call that keeps its connection open, until its context ends or stop; it matches the signal's sender to the portal so another client cannot forge a click.
 - Each portal call opens its own connection, so the handle token needs only to be fresh, not coordinated.
 - `portal/errors.go` carries no build tag, so Windows and darwin builds declare the same sentinels.
 - `userdirs` decides by `home`, never by `runtime.GOOS`: the caller knows which layout it is resolving. The
