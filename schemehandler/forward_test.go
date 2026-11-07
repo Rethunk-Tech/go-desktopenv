@@ -100,15 +100,30 @@ func TestPreviousRoundTrip(t *testing.T) {
 	}
 }
 
-func TestWindowsForwardRefusesALinkACmdHandlerWouldRun(t *testing.T) {
+func TestWindowsForwardEscapesTheLinkForACmdHandler(t *testing.T) {
 	saved := previousID(`cmd /c start "" "%1"`, "", "")
-	if _, _, err := windowsForwardArgv(saved, "nxm://g/mods/1&calc"); err == nil {
-		t.Fatal("a link with & went to cmd.exe")
-	}
-	if _, _, err := windowsForwardArgv(saved, "nxm://g/mods/1"); err != nil {
+	nexusLink := "nxm://stardewvalley/mods/21297/files/90031?key=abc-DEF_1&expires=1700000000&user_id=123"
+	_, args, err := windowsForwardArgv(saved, nexusLink)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := windowsForwardArgv(previousID(`C:\App\app.exe "%1"`, "", ""), "nxm://g/mods/1&calc"); err != nil {
-		t.Fatalf("a CRT-parsed handler was refused: %v", err)
+	want := "nxm://stardewvalley/mods/21297/files/90031?key=abc-DEF_1^&expires=1700000000^&user_id=123"
+	if args[len(args)-1] != want {
+		t.Fatalf("last arg %q, want %q", args[len(args)-1], want)
+	}
+	_, args, err = windowsForwardArgv(saved, "nxm://g/mods/1&calc|whoami>x")
+	if err != nil || args[len(args)-1] != "nxm://g/mods/1^&calc^|whoami^>x" {
+		t.Fatalf("injection not escaped: %q, %v", args, err)
+	}
+	for _, bad := range []string{`nxm://g/1"&calc`, "nxm://g/1\r\ncalc", "nxm://g/%PATH%", "nxm://g/1 2"} {
+		if _, _, err := windowsForwardArgv(saved, bad); err == nil {
+			t.Errorf("%q went to cmd.exe", bad)
+		}
+	}
+	if _, args, err := windowsForwardArgv(saved, "nxm://g/mods/1?a=%20b"); err != nil || args[len(args)-1] != "nxm://g/mods/1?a=%20b" {
+		t.Errorf("a percent-encoded link: %q, %v", args, err)
+	}
+	if _, args, err := windowsForwardArgv(previousID(`C:\App\app.exe "%1"`, "", ""), nexusLink); err != nil || args[len(args)-1] != nexusLink {
+		t.Errorf("a CRT-parsed handler got %q, %v", args, err)
 	}
 }

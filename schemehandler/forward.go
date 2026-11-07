@@ -1,6 +1,7 @@
 package schemehandler
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -17,10 +18,34 @@ func windowsForwardArgv(previousSaved, link string) (string, []string, error) {
 	if len(argv) == 0 || argv[0] == "" {
 		return "", nil, errNoPrevious
 	}
-	if runsThroughCmd(argv[0]) && strings.ContainsAny(link, "&|<>^%\"()!\r\n") {
-		return "", nil, fmt.Errorf("schemehandler: the link holds characters cmd.exe would run, and the previous handler is %s", argv[0])
+	if runsThroughCmd(argv[0]) {
+		var err error
+		if link, err = escapeForCmd(link); err != nil {
+			return "", nil, err
+		}
 	}
 	return programAndArgs(argv, "%1", link)
+}
+
+// escapeForCmd makes link one literal word for cmd.exe, which parses the command line again after Go has escaped it for
+// the C runtime. A caret before each of & | < > ( ) ^ ! keeps cmd from reading them as operators, so the '&' in a real
+// nxm link survives. What no escape can neutralise is refused: a quote, a line break, white space (Go would quote the
+// word, where carets turn literal), and '%' before a letter or underscore, which cmd expands as an environment variable.
+func escapeForCmd(link string) (string, error) {
+	var b strings.Builder
+	for i := 0; i < len(link); i++ {
+		c := link[i]
+		switch {
+		case c == '"' || c == '\r' || c == '\n' || c == ' ' || c == '\t' || c < 0x20:
+			return "", fmt.Errorf("schemehandler: the link holds %q, which cmd.exe cannot be given as one word", c)
+		case c == '%' && i+1 < len(link) && (link[i+1] == '_' || link[i+1] >= 'A' && link[i+1] <= 'Z' || link[i+1] >= 'a' && link[i+1] <= 'z'):
+			return "", errors.New("schemehandler: the link holds a % that cmd.exe would expand as a variable")
+		case strings.IndexByte("&|<>()^!", c) >= 0:
+			b.WriteByte('^')
+		}
+		b.WriteByte(c)
+	}
+	return b.String(), nil
 }
 
 // runsThroughCmd reports whether program is cmd.exe or a batch file, which re-parse their arguments as a command line
