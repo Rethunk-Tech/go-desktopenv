@@ -65,6 +65,7 @@ type fake struct {
 	entry    string // Install's entry, recorded
 	closed   chan dbus.ObjectPath
 	seen     map[string]map[string]dbus.Variant // request method -> options
+	forger   *dbus.Conn                         // when set, also emits a forged Response from this connection
 	notified map[string]map[string]dbus.Variant // Notification id -> options, until removed
 }
 
@@ -116,6 +117,12 @@ func (f *fake) begin(sender dbus.Sender, method string, options map[string]dbus.
 	f.mu.Unlock()
 	if err := f.conn.Export(&requestObj{f, handle}, handle, requestIf); err != nil {
 		return "", dbus.MakeFailedError(err)
+	}
+	if forger := f.forger; forger != nil {
+		go func() {
+			time.Sleep(20 * time.Millisecond)
+			_ = forger.Emit(handle, requestIf+".Response", uint32(0), map[string]dbus.Variant{"autostart": dbus.MakeVariant(true)})
+		}()
 	}
 	if !silent {
 		go func() {
@@ -330,6 +337,10 @@ func TestRetrieveSecretReadsThePipe(t *testing.T) {
 	if _, err := RetrieveSecret(ctx5(t)); err == nil {
 		t.Fatal("want error for an empty secret")
 	}
+	f.set(func(f *fake) { f.secret = strings.Repeat("x", maxSecret+1) })
+	if _, err := RetrieveSecret(ctx5(t)); err == nil {
+		t.Fatal("want error for a secret over the bound")
+	}
 }
 
 func TestReadSetting(t *testing.T) {
@@ -467,5 +478,21 @@ func TestLiveNotification(t *testing.T) {
 	}
 	if err := RemoveNotification(ctx5(t), n.ID); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A Response sent by anyone but the portal must not settle a request.
+func TestRequestIgnoresAResponseFromAnotherSender(t *testing.T) {
+	f := startFake(t)
+	forger, err := dbus.ConnectSessionBus()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = forger.Close() })
+	f.set(func(f *fake) { f.silent, f.forger = true, forger })
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+	if err := SetAutostart(ctx, Autostart{Enable: true}); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("a forged Response settled the request: %v", err)
 	}
 }

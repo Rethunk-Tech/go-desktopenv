@@ -50,6 +50,7 @@ func call(ctx context.Context, conn *dbus.Conn, method string, args ...any) *dbu
 func request(ctx context.Context, conn *dbus.Conn, method, token string, args ...any) (map[string]dbus.Variant, error) {
 	handle := handlePath(conn.Names()[0], token)
 	match := []dbus.MatchOption{
+		dbus.WithMatchSender(busName),
 		dbus.WithMatchObjectPath(handle),
 		dbus.WithMatchInterface(requestIf),
 		dbus.WithMatchMember("Response"),
@@ -224,6 +225,13 @@ func launcherExists(ctx context.Context, conn *dbus.Conn, id string) (bool, erro
 	return false, err
 }
 
+const (
+	// maxSecret bounds the bytes read from the secret pipe; the portal's secret is 64 bytes.
+	maxSecret = 4096
+	// secretTimeout bounds the pipe read of a caller whose context has no deadline.
+	secretTimeout = 30 * time.Second
+)
+
 // RetrieveSecret returns the Secret portal's per-app master secret: the same bytes on every call for this app id,
 // which the portal derives from the app id, not from the request. It answers only a sandboxed caller with an app id.
 func RetrieveSecret(ctx context.Context) ([]byte, error) {
@@ -250,9 +258,18 @@ func RetrieveSecret(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	secret, err := io.ReadAll(r)
+	// The portal writes and closes the pipe; one that keeps it open or sends more than a secret is a failure.
+	if dl, ok := ctx.Deadline(); ok {
+		_ = r.SetReadDeadline(dl)
+	} else {
+		_ = r.SetReadDeadline(time.Now().Add(secretTimeout))
+	}
+	secret, err := io.ReadAll(io.LimitReader(r, maxSecret+1))
 	if err != nil {
 		return nil, err
+	}
+	if len(secret) > maxSecret {
+		return nil, errors.New("the secret portal returned more than a secret")
 	}
 	if len(secret) == 0 {
 		return nil, errors.New("the secret portal returned an empty secret")
