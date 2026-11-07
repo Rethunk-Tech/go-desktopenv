@@ -6,6 +6,7 @@ package hostfile
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -27,6 +28,18 @@ func Exec(name string, args ...string) (string, error) {
 	cmd.Env = hostenv.Environ()
 	out, err := cmd.Output()
 	return string(out), err
+}
+
+// Spawn starts a real process like Exec and does not wait for it: the program may be a handler the user keeps open.
+// Its output is dropped and the process is reaped in the background.
+func Spawn(name string, args ...string) error {
+	cmd := exec.CommandContext(context.Background(), name, args...) //nolint:gosec // G204: a handler the user registered
+	cmd.Env = hostenv.Environ()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go func() { _ = cmd.Wait() }()
+	return nil
 }
 
 // Host runs the file steps through Run.
@@ -87,8 +100,10 @@ func (h Host) Write(path string, b []byte, perm fs.FileMode) error {
 		}
 		return safefs.WriteFileAtomic(path, b, perm)
 	}
-	_, err := h.Command("sh", "-c", `mkdir -p "$(dirname "$1")" && printf %s "$2" >"$1.new" && mv "$1.new" "$1"`,
-		"sh", path, string(b))
+	// The temporary file is created by mktemp beside the target, never at a name another process could have linked.
+	_, err := h.Command("sh", "-c", `d=$(dirname "$1") && mkdir -p "$d" && t=$(mktemp "$d/.write.XXXXXX") && `+
+		`{ printf %s "$2" >"$t" && chmod "$3" "$t" && mv "$t" "$1"; } || { rm -f "$t"; exit 1; }`,
+		"sh", path, string(b), fmt.Sprintf("%o", perm.Perm()))
 	return err
 }
 

@@ -140,3 +140,37 @@ func TestHostInsideFlatpakRunsHostScripts(t *testing.T) {
 		}
 	}
 }
+
+// Inside a Flatpak, Write must not write through a predictable name: a link planted at <path>.new would be followed.
+func TestFlatpakWriteIgnoresALinkAtTheOldTempName(t *testing.T) {
+	t.Setenv("FLATPAK_ID", "org.example.App")
+	dir := t.TempDir()
+	victim := filepath.Join(dir, "victim")
+	if err := os.WriteFile(victim, []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(dir, "sub", "mimeapps.list")
+	if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, target+".new"); err != nil {
+		t.Fatal(err)
+	}
+	h := Host{Run: func(_ string, args ...string) (string, error) {
+		i := slices.Index(args, "-c")
+		out, err := exec.CommandContext(t.Context(), "sh", args[i:]...).Output() //nolint:gosec // G204: the test runs the host script on this machine
+		return string(out), err
+	}}
+	if err := h.Write(target, []byte("new"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(victim); string(b) != "keep" { //nolint:gosec // G304: a path under the test's own temp folder
+		t.Fatalf("the link target was overwritten: %q", b)
+	}
+	if b, _ := os.ReadFile(target); string(b) != "new" { //nolint:gosec // G304: a path under the test's own temp folder
+		t.Fatalf("target = %q", b)
+	}
+	if info, err := os.Stat(target); err != nil || info.Mode().Perm() != 0o644 {
+		t.Fatalf("mode: %v, %v", info, err)
+	}
+}
