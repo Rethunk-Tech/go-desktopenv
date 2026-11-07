@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -170,7 +171,8 @@ func TestFlatpakWriteIgnoresALinkAtTheOldTempName(t *testing.T) {
 	if b, _ := os.ReadFile(target); string(b) != "new" { //nolint:gosec // G304: a path under the test's own temp folder
 		t.Fatalf("target = %q", b)
 	}
-	if info, err := os.Stat(target); err != nil || info.Mode().Perm() != 0o644 {
+	// Windows has no permission bits: Stat reports 0o666 whatever chmod did.
+	if info, err := os.Stat(target); err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0o644) {
 		t.Fatalf("mode: %v, %v", info, err)
 	}
 }
