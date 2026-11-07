@@ -44,6 +44,9 @@ func (h Host) manifestPath(firefox bool) (string, error) {
 func (h Host) Install() error { return h.install(software) }
 
 func (h Host) install(root string) error {
+	if err := h.checkName(); err != nil {
+		return err
+	}
 	if _, err := h.manifestPath(false); err != nil {
 		return err
 	}
@@ -84,6 +87,9 @@ func setDefault(key, value string) error {
 func (h Host) Uninstall() error { return h.uninstall(software) }
 
 func (h Host) uninstall(root string) error {
+	if err := h.checkName(); err != nil {
+		return err
+	}
 	var errs []error
 	for _, b := range browsers {
 		if err := registry.DeleteKey(registry.CURRENT_USER, h.hostKey(root, b.probe)); err != nil && !errors.Is(err, registry.ErrNotExist) {
@@ -103,7 +109,12 @@ func (h Host) uninstall(root string) error {
 }
 
 // Status is each installed browser's manifest, the one its key names.
-func (h Host) Status() ([]Status, error) { return h.status(software), nil }
+func (h Host) Status() ([]Status, error) {
+	if err := h.checkName(); err != nil {
+		return nil, err
+	}
+	return h.status(software), nil
+}
 
 func (h Host) status(root string) []Status {
 	var out []Status

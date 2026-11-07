@@ -43,7 +43,34 @@ type Host struct {
 }
 
 // Manifest is the host manifest a browser reads; firefox picks that browser's allow-list field.
-func (h Host) Manifest(firefox bool) ([]byte, error) { return h.manifest(h.Path, firefox) }
+func (h Host) Manifest(firefox bool) ([]byte, error) {
+	if err := h.checkName(); err != nil {
+		return nil, err
+	}
+	return h.manifest(h.Path, firefox)
+}
+
+// ErrBadName is the error for a Host.Name a browser would not accept and that could not be one file name.
+var ErrBadName = errors.New("nativemessaging: Host.Name must be letters, digits, '.', '_' or '-', starting with a letter or digit")
+
+func isAlnum(c byte) bool {
+	return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+}
+
+// checkName refuses a name that is empty, starts with a separator or dot, holds "..", or has any byte outside
+// letters, digits, '.', '_' and '-'. The name becomes a file name on Linux and a registry key on Windows.
+func (h Host) checkName() error {
+	n := h.Name
+	if n == "" || strings.Contains(n, "..") || !isAlnum(n[0]) {
+		return ErrBadName
+	}
+	for i := range len(n) {
+		if c := n[i]; !isAlnum(c) && c != '.' && c != '_' && c != '-' {
+			return ErrBadName
+		}
+	}
+	return nil
+}
 
 func (h Host) manifest(path string, firefox bool) ([]byte, error) {
 	m := map[string]any{

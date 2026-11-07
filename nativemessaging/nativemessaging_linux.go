@@ -91,6 +91,9 @@ func shellQuote(s string) string {
 // Inside a Flatpak it first writes the wrapper the host browser starts, since the host cannot run the sandbox's
 // Path; the browser's arguments pass through to the program.
 func (h Host) Install() error {
+	if err := h.checkName(); err != nil {
+		return err
+	}
 	exe, err := h.exe()
 	if err != nil {
 		return err
@@ -122,6 +125,9 @@ func (h Host) Install() error {
 
 // Uninstall removes the manifest from every installed browser's folder.
 func (h Host) Uninstall() error {
+	if err := h.checkName(); err != nil {
+		return err
+	}
 	locs, err := h.locations()
 	if err != nil {
 		return err
@@ -135,6 +141,9 @@ func (h Host) Uninstall() error {
 
 // Status is each installed browser's manifest, in a fixed browser order.
 func (h Host) Status() ([]Status, error) {
+	if err := h.checkName(); err != nil {
+		return nil, err
+	}
 	exe, err := h.exe()
 	if err != nil {
 		return nil, err

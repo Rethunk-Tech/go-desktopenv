@@ -202,3 +202,23 @@ func TestRunReplacesTheHostPrograms(t *testing.T) {
 		t.Fatalf("host programs not routed through Run: %q", calls)
 	}
 }
+
+func TestAHostNameThatIsNotAFileNameIsRefused(t *testing.T) {
+	home, _ := fakeHome(t)
+	for _, name := range []string{"", ".", "..", "../../../evil", "a/b", `a\b`, ".hidden", "-x", "a..b", "a b", "a\x00b"} {
+		h := testHost(filepath.Join(home, "app"))
+		h.Name = name
+		if err := h.Install(); !errors.Is(err, ErrBadName) {
+			t.Errorf("Install(%q) = %v", name, err)
+		}
+		if err := h.Uninstall(); !errors.Is(err, ErrBadName) {
+			t.Errorf("Uninstall(%q) = %v", name, err)
+		}
+		if _, err := h.Status(); !errors.Is(err, ErrBadName) {
+			t.Errorf("Status(%q) = %v", name, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(home, "evil.json")); err == nil {
+		t.Fatal("a manifest was written outside the browser folder")
+	}
+}
