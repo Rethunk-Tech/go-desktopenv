@@ -6,6 +6,18 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-07
+
+### Added
+
+- `nativemessaging.ErrBadName`: a `Host.Name` must be one file name of letters, digits, `.`, `_` and `-`.
+
+### Fixed
+
+- `schemehandler` escapes the link for a cmd handler instead of refusing it, refuses cmd metacharacters elsewhere, validates `DesktopID`, reads `Exec` only from the desktop entry's main group, and `Forward` no longer waits for the handler.
+- `portal` accepts a reply only from the portal's own sender and bounds the secret it reads.
+- A native-messaging host file is written through a temporary file inside a Flatpak.
+
 ## [0.6.0] - 2026-11-05
 
 ### Added
@@ -63,7 +75,8 @@ Notable changes to `go-desktopenv`. The format follows
 - `userdirs` resolves the config and data folders for a home (XDG on Linux, `%APPDATA%` and `%LOCALAPPDATA%` on Windows), the host user's folders from inside a Flatpak, and Flatpak app roots; an environment value counts only when absolute and only for the real home.
 - `portal` calls xdg-desktop-portal: `SetAutostart`, `InstallLauncher`, `UninstallLauncher`, `LauncherExists`, `RetrieveSecret` and `ReadSetting`, each bounded by a context and answering `ErrUnsupported` off Linux.
 
-[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.6.0...v0.7.0
 [0.5.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.3.0...v0.3.1
