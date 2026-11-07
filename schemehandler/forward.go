@@ -17,7 +17,17 @@ func windowsForwardArgv(previousSaved, link string) (string, []string, error) {
 	if len(argv) == 0 || argv[0] == "" {
 		return "", nil, errNoPrevious
 	}
+	if runsThroughCmd(argv[0]) && strings.ContainsAny(link, "&|<>^%\"()!\r\n") {
+		return "", nil, fmt.Errorf("schemehandler: the link holds characters cmd.exe would run, and the previous handler is %s", argv[0])
+	}
 	return programAndArgs(argv, "%1", link)
+}
+
+// runsThroughCmd reports whether program is cmd.exe or a batch file, which re-parse their arguments as a command line
+// after Go has escaped them for the C runtime.
+func runsThroughCmd(program string) bool {
+	base := strings.ToLower(program[strings.LastIndexAny(program, `\/`)+1:])
+	return base == "cmd" || base == "cmd.exe" || strings.HasSuffix(base, ".cmd") || strings.HasSuffix(base, ".bat")
 }
 
 // linuxForwardArgv is argv for the saved desktop Exec, with link as one element in place of %u or %U.

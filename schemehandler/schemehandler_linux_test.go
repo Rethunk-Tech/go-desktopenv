@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Rethunk-Tech/go-desktopenv/desktopentry"
 	"github.com/Rethunk-Tech/go-desktopenv/internal/hostfile"
@@ -396,10 +397,16 @@ func TestForwardRunsThePreviousEntrysExec(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "out")
 	write(t, filepath.Join(under(h, "system"), "applications", "other.desktop"),
 		"[Desktop Entry]\nName=Other\nExec="+desktopentry.Exec("sh", "-c", `printf %s "$1" > "$0"`, out)+" %u\n")
-	h.run = hostfile.Exec
+	h.spawn = hostfile.Spawn
 	link := "nxm://x/mods/1?a=$(id)&b"
 	if err := h.Forward(link, "other.desktop"); err != nil {
 		t.Fatal(err)
+	}
+	for range 200 {
+		if _, err := os.Stat(out); err == nil {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 	if got := read(t, out); got != link {
 		t.Fatalf("handler got %q", got)
@@ -445,5 +452,38 @@ func TestConfigRunReplacesEveryProgram(t *testing.T) {
 	}
 	if got := read(t, filepath.Join(dir, "config", "mimeapps.list")); strings.Contains(got, "nxm") {
 		t.Fatalf("DropDefault left %q", got)
+	}
+}
+
+// A handler that stays open must not hold the link-handling call.
+func TestForwardDoesNotWaitForTheHandler(t *testing.T) {
+	h, _ := newLinux(t, testConfig(), "")
+	write(t, filepath.Join(under(h, "system"), "applications", "slow.desktop"),
+		"[Desktop Entry]\nExec="+desktopentry.Exec("sh", "-c", "sleep 5")+" %u\n")
+	h.spawn = hostfile.Spawn
+	start := time.Now()
+	if err := h.Forward("nxm://x/mods/1", "slow.desktop"); err != nil {
+		t.Fatal(err)
+	}
+	if took := time.Since(start); took > 2*time.Second {
+		t.Fatalf("Forward waited %s", took)
+	}
+}
+
+func TestNewRefusesADesktopIDThatIsNotAFileName(t *testing.T) {
+	for _, id := range []string{"", ".", "..", ".desktop", "a/b.desktop", `a\b.desktop`, "../x.desktop", "App", "../.."} {
+		cfg := testConfig()
+		cfg.DesktopID = id
+		if _, err := New(cfg); err == nil {
+			t.Errorf("DesktopID %q was accepted", id)
+		}
+	}
+}
+
+func TestEntryKeyIgnoresOtherGroups(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "x.desktop")
+	write(t, path, "[Desktop Action new]\nExec=wrong %u\n[Desktop Entry]\nExec=right %u\n")
+	if got := readKey(path, "Exec="); got != "right %u" {
+		t.Fatalf("Exec = %q", got)
 	}
 }

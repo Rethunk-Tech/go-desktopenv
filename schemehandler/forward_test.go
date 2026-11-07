@@ -99,3 +99,16 @@ func TestPreviousRoundTrip(t *testing.T) {
 		t.Fatal("no command means nothing saved")
 	}
 }
+
+func TestWindowsForwardRefusesALinkACmdHandlerWouldRun(t *testing.T) {
+	saved := previousID(`cmd /c start "" "%1"`, "", "")
+	if _, _, err := windowsForwardArgv(saved, "nxm://g/mods/1&calc"); err == nil {
+		t.Fatal("a link with & went to cmd.exe")
+	}
+	if _, _, err := windowsForwardArgv(saved, "nxm://g/mods/1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := windowsForwardArgv(previousID(`C:\App\app.exe "%1"`, "", ""), "nxm://g/mods/1&calc"); err != nil {
+		t.Fatalf("a CRT-parsed handler was refused: %v", err)
+	}
+}

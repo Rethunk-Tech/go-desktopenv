@@ -31,23 +31,38 @@ type Handler struct {
 	// dataDirs are the system applications folders, read for an owner's name and Exec.
 	dataDirs []string
 	run      hostfile.Runner
+	// spawn starts Forward's handler without waiting for it; nil (a Config.Run was given) runs it through run.
+	spawn func(name string, args ...string) error
 }
 
 // New returns the Handler for cfg. It reads HOME, XDG_DATA_HOME and XDG_DATA_DIRS once.
 func New(cfg Config) (*Handler, error) {
+	if err := checkDesktopID(cfg.DesktopID); err != nil {
+		return nil, err
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{cfg: cfg, home: home, dataHome: userdirs.DataHome(home), run: hostfile.Exec}
+	h := &Handler{cfg: cfg, home: home, dataHome: userdirs.DataHome(home), run: hostfile.Exec, spawn: hostfile.Spawn}
 	if cfg.Run != nil {
-		h.run = cfg.Run
+		h.run, h.spawn = cfg.Run, nil
 	}
 	dirs := cmp.Or(os.Getenv("XDG_DATA_DIRS"), "/usr/local/share:/usr/share")
 	for d := range strings.SplitSeq(dirs, ":") {
 		h.dataDirs = append(h.dataDirs, filepath.Join(d, "applications"))
 	}
 	return h, nil
+}
+
+// checkDesktopID refuses an id that is not one file name in the applications folder: an empty or "." id would name the
+// folder itself, which RemoveEntry would delete whole.
+func checkDesktopID(id string) error {
+	if id == "" || id != filepath.Base(id) || strings.ContainsAny(id, `/\`) || !strings.HasSuffix(id, ".desktop") ||
+		id == ".desktop" {
+		return fmt.Errorf("schemehandler: DesktopID %q is not a desktop entry file name", id)
+	}
+	return nil
 }
 
 // packaged is Config.Packaged, or a Flatpak, whose own entry is the one its package exported.
@@ -103,13 +118,20 @@ func (h *Handler) appName(id string) string {
 	return strings.TrimSuffix(id, ".desktop")
 }
 
+// readKey is the first line starting with prefix in the [Desktop Entry] group: a [Desktop Action ...] group's own
+// Exec= is not the entry's.
 func readKey(path, prefix string) string {
 	b, err := safefs.ReadFile(path)
 	if err != nil {
 		return ""
 	}
+	inEntry := false
 	for line := range strings.SplitSeq(string(b), "\n") {
-		if v, ok := strings.CutPrefix(line, prefix); ok {
+		if strings.HasPrefix(line, "[") {
+			inEntry = strings.TrimSpace(line) == "[Desktop Entry]"
+			continue
+		}
+		if v, ok := strings.CutPrefix(line, prefix); ok && inEntry {
 			return v
 		}
 	}
@@ -320,6 +342,9 @@ func (h *Handler) Forward(link, previous string) error {
 	})
 	if err != nil {
 		return err
+	}
+	if h.spawn != nil {
+		return h.spawn(name, args...)
 	}
 	_, err = h.run(name, args...)
 	return err
