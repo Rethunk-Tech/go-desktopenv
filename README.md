@@ -26,7 +26,7 @@ A worked example and the contracts: [HUMANS.md](HUMANS.md).
 - `portal`: autostart, launchers, the per-app secret, desktop settings and notifications (with click and button actions), each bounded by your context
 - `flatpak`: detect a sandbox, run or build a command for the host, end the host child on cancel
 - `userdirs`: config and data folders per home, honouring only absolute environment values for the real home
-- `desktopentry`: escape, build and read Desktop Entry `Exec=` values
+- `desktopentry`: escape, build and read Desktop Entry `Exec=` values, write a file from keys, and rewrite one key
 - `nowindow`: no console window for a console child of a Windows GUI process
 - `hostenv`: a child process's environment without what an AppImage's AppRun injected; `Launchable` is `$APPIMAGE` when exe runs from that AppImage's `$APPDIR` mount, else exe
 - `fonts`: the installed font families, from fontconfig or the Windows registry

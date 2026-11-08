@@ -105,7 +105,12 @@ func TestWrittenEntriesPassDesktopFileValidate(t *testing.T) {
 		{"/home/u/`x`\\y\"z/Mortar.AppImage", ""},
 		{"/home/u/a\nb\tc/Mortar.AppImage"},
 	} {
-		body := "[Desktop Entry]\nType=Application\nName=" + Value(" a\\b\tc\nd") + "\nExec=" + Exec(argv...) + " %u\nTerminal=false\n"
+		body := Entry{
+			{"Type", "Application"},
+			{"Name", Value(" a\\b\tc\nd")},
+			{"Exec", Exec(argv...) + " %u"},
+			{"Terminal", "false"},
+		}.Marshal()
 		dir := t.TempDir()
 		if err := os.WriteFile(filepath.Join(dir, "x.desktop"), []byte(body), 0o600); err != nil {
 			t.Fatal(err)
@@ -115,5 +120,116 @@ func TestWrittenEntriesPassDesktopFileValidate(t *testing.T) {
 		if out, err := validate.CombinedOutput(); err != nil {
 			t.Errorf("%q: %v\n%s", argv, err, out)
 		}
+	}
+}
+
+func TestMarshalWritesKeysInOrder(t *testing.T) {
+	t.Parallel()
+	exe, arg, name := "/usr/bin/app", "--play=g/p", "Profile (Game)"
+	got := Entry{
+		{"Type", "Application"},
+		{"Name", Value(name)},
+		{"Comment", "Play this profile"},
+		{"Exec", Exec(exe, arg)},
+		{"Icon", "app"},
+		{"Terminal", "false"},
+		{"Categories", "Game;"},
+	}.Marshal()
+	want := "[Desktop Entry]\nType=Application\nName=" + Value(name) + "\nComment=Play this profile\nExec=" + Exec(exe, arg) + "\nIcon=app\nTerminal=false\nCategories=Game;\n"
+	if got != want {
+		t.Errorf("Marshal() = %q, want %q", got, want)
+	}
+}
+
+func TestMarshalWritesAutostartKeys(t *testing.T) {
+	t.Parallel()
+	exe := "/usr/bin/app"
+	got := Entry{
+		{"Type", "Application"},
+		{"Name", "App"},
+		{"Exec", Exec(exe)},
+		{"X-GNOME-Autostart-enabled", "true"},
+	}.Marshal()
+	want := "[Desktop Entry]\nType=Application\nName=App\nExec=" + Exec(exe) + "\nX-GNOME-Autostart-enabled=true\n"
+	if got != want {
+		t.Errorf("Marshal() = %q, want %q", got, want)
+	}
+}
+
+func TestSetKeyRewritesNameAndKeepsUnknownKeys(t *testing.T) {
+	t.Parallel()
+	in := Entry{
+		{"Type", "Application"},
+		{"Name", Value("old")},
+		{"Comment", "Play this profile"},
+		{"Exec", Exec("/usr/bin/app", "--play=g/p")},
+		{"X-Custom", "keep"},
+	}.Marshal()
+	got, err := SetKey(in, "Name", Value("new (game)"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Entry{
+		{"Type", "Application"},
+		{"Name", Value("new (game)")},
+		{"Comment", "Play this profile"},
+		{"Exec", Exec("/usr/bin/app", "--play=g/p")},
+		{"X-Custom", "keep"},
+	}.Marshal()
+	if got != want {
+		t.Errorf("SetKey Name = %q, want %q", got, want)
+	}
+}
+
+func TestSetKeyRewritesExecAndKeepsUnknownKeys(t *testing.T) {
+	t.Parallel()
+	in := Entry{
+		{"Type", "Application"},
+		{"Name", "Profile"},
+		{"Exec", Exec("/old/app", "--play=g/p")},
+		{"X-Custom", "keep"},
+	}.Marshal()
+	got, err := SetKey(in, "Exec", Exec("/new/app", "--play=g/p"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Entry{
+		{"Type", "Application"},
+		{"Name", "Profile"},
+		{"Exec", Exec("/new/app", "--play=g/p")},
+		{"X-Custom", "keep"},
+	}.Marshal()
+	if got != want {
+		t.Errorf("SetKey Exec = %q, want %q", got, want)
+	}
+}
+
+func TestSetKeyKeepsAMissingTrailingNewline(t *testing.T) {
+	t.Parallel()
+	got, err := SetKey("[Desktop Entry]\nName=old", "Name", "new")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "[Desktop Entry]\nName=new" {
+		t.Errorf("SetKey = %q, want %q", got, "[Desktop Entry]\nName=new")
+	}
+}
+
+func TestSetKeyRewritesOnlyTheFirstMatch(t *testing.T) {
+	t.Parallel()
+	got, err := SetKey("Name=a\nName=b\n", "Name", "c")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "Name=c\nName=b\n" {
+		t.Errorf("SetKey = %q, want %q", got, "Name=c\nName=b\n")
+	}
+}
+
+func TestSetKeyMissingKey(t *testing.T) {
+	t.Parallel()
+	_, err := SetKey("[Desktop Entry]\nType=Application\n", "Name", "x")
+	if err == nil {
+		t.Fatal("SetKey missing key: got nil, want error")
 	}
 }

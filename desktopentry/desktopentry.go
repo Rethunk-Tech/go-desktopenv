@@ -1,7 +1,11 @@
-// Package desktopentry escapes and reads the string values of a freedesktop Desktop Entry file, chiefly the Exec key.
+// Package desktopentry escapes and reads the string values of a freedesktop Desktop Entry file, writes one from its
+// keys, and rewrites a single key while keeping the rest.
 package desktopentry
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
 var (
 	// valueEscaper doubles a backslash, which starts an escape in the file format, and turns a line break into a
@@ -84,4 +88,42 @@ func SplitExec(value string) []string {
 	}
 	flush()
 	return args
+}
+
+// Entry is a Desktop Entry's keys in the order Marshal writes them. Each pair is a key name and its already-escaped
+// value; use Value for a string key and Exec for Exec.
+type Entry [][2]string
+
+// Marshal writes a .desktop file: a [Desktop Entry] group header and one key=value line per pair, each ending in a
+// newline.
+func (e Entry) Marshal() string {
+	var b strings.Builder
+	b.WriteString("[Desktop Entry]\n")
+	for _, kv := range e {
+		b.WriteString(kv[0])
+		b.WriteByte('=')
+		b.WriteString(kv[1])
+		b.WriteByte('\n')
+	}
+	return b.String()
+}
+
+// SetKey rewrites the first key= line in a Desktop Entry file. Every other line stays, in order, including keys
+// Marshal would not write. value is the already-escaped right-hand side (see Value and Exec). A trailing newline on
+// that line is kept if it was there. If the file has no such key, SetKey returns an error.
+func SetKey(entry, key, value string) (string, error) {
+	prefix := key + "="
+	lines := strings.SplitAfter(entry, "\n")
+	for i, line := range lines {
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		suffix := ""
+		if strings.HasSuffix(line, "\n") {
+			suffix = "\n"
+		}
+		lines[i] = prefix + value + suffix
+		return strings.Join(lines, ""), nil
+	}
+	return "", errors.New("desktop entry has no " + key)
 }

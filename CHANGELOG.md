@@ -9,6 +9,7 @@ Notable changes to `go-desktopenv`. The format follows
 ### Added
 
 - `hostenv.Launchable` returns `$APPIMAGE` when exe runs from that AppImage's `$APPDIR` mount, else exe.
+- `desktopentry.Entry.Marshal` writes a `.desktop` file from keys, and `desktopentry.SetKey` rewrites one key while keeping the rest in order.
 
 ## [0.7.0] - 2026-11-07
 
