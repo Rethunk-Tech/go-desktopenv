@@ -5,7 +5,7 @@ package autostart
 import "context"
 
 // Enable returns ErrUnsupported.
-func Enable(context.Context, string, []string) error { return ErrUnsupported }
+func Enable(context.Context, Entry) error { return ErrUnsupported }
 
 // Disable returns ErrUnsupported.
 func Disable(context.Context, string) error { return ErrUnsupported }

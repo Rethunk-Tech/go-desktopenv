@@ -15,7 +15,7 @@ func TestEnableWritesAutostartFile(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", cfg)
 	t.Setenv("FLATPAK_ID", "")
 	argv := []string{"/usr/bin/my app", "--flag"}
-	if err := Enable(t.Context(), "myapp", argv); err != nil {
+	if err := Enable(t.Context(), Entry{ID: "myapp", Name: "My App", Argv: argv}); err != nil {
 		t.Fatal(err)
 	}
 	on, err := Enabled("myapp")
@@ -31,7 +31,7 @@ func TestEnableWritesAutostartFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "[Desktop Entry]\nType=Application\nName=myapp\nExec=" + desktopentry.Exec(argv...) + "\nX-GNOME-Autostart-enabled=true\n"
+	want := "[Desktop Entry]\nType=Application\nName=My App\nExec=" + desktopentry.Exec(argv...) + "\nX-GNOME-Autostart-enabled=true\n"
 	if string(body) != want {
 		t.Fatalf("desktop file = %q, want %q", body, want)
 	}

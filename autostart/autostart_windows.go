@@ -14,17 +14,17 @@ import (
 
 const runKey = `Software\Microsoft\Windows\CurrentVersion\Run`
 
-// Enable writes argv as a HKCU Run value named app, so the session starts it
+// Enable writes e.Argv as a HKCU Run value named e.ID, so the session starts it
 // at sign-in.
-func Enable(_ context.Context, app string, argv []string) error {
-	return apply(app, argv, true)
+func Enable(_ context.Context, e Entry) error {
+	return apply(e.ID, e.Argv, true)
 }
 
-// Disable removes the HKCU Run value named app.
-func Disable(_ context.Context, app string) error { return apply(app, nil, false) }
+// Disable removes the HKCU Run value named id.
+func Disable(_ context.Context, id string) error { return apply(id, nil, false) }
 
-// Enabled reports whether a HKCU Run value named app exists.
-func Enabled(app string) (bool, error) {
+// Enabled reports whether a HKCU Run value named id exists.
+func Enabled(id string) (bool, error) {
 	key, err := winreg.OpenKey(winreg.CURRENT_USER, runKey, winreg.QUERY_VALUE)
 	if err != nil {
 		if errors.Is(err, winreg.ErrNotExist) {
@@ -33,7 +33,7 @@ func Enabled(app string) (bool, error) {
 		return false, err
 	}
 	defer func() { _ = key.Close() }()
-	_, _, err = key.GetStringValue(app)
+	_, _, err = key.GetStringValue(id)
 	if err != nil {
 		if errors.Is(err, winreg.ErrNotExist) {
 			return false, nil

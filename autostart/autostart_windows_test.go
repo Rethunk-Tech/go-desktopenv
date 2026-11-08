@@ -18,7 +18,7 @@ func TestEnableSetsRunValue(t *testing.T) {
 		t.Fatalf("Enabled before Enable = %v, %v", on, err)
 	}
 	exe := `C:\Program Files\App\app.exe`
-	if err := Enable(t.Context(), app, []string{exe}); err != nil {
+	if err := Enable(t.Context(), Entry{ID: app, Argv: []string{exe}}); err != nil {
 		t.Fatal(err)
 	}
 	on, err = Enabled(app)
