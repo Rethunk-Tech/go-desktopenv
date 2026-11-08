@@ -43,6 +43,8 @@ func Open(path string) error {
 	switch runtime.GOOS {
 	case "windows":
 		name = "explorer"
+	case "darwin":
+		name = "open"
 	}
 	cmd := exec.CommandContext(context.Background(), name, path) //nolint:gosec // G204: name is the OS file manager; path is validated
 	cmd.Env = hostenv.Environ()
