@@ -31,6 +31,7 @@ A worked example and the contracts: [HUMANS.md](HUMANS.md).
 - `hostenv`: a child process's environment without what an AppImage's AppRun injected; `Launchable` is `$APPIMAGE` when exe runs from that AppImage's `$APPDIR` mount, else exe
 - `fonts`: the installed font families, from fontconfig or the Windows registry
 - `sysaccent`: the desktop's accent colour as `#rrggbb`, from the DWM or the Settings portal
+- `reveal`: show a path in the system file manager (xdg-open, or explorer with comma-safe quoting); `wallpaper`: the desktop wallpaper path (GNOME gsettings, dark variant by colour-scheme, or Windows HKCU Desktop Wallpaper)
 - `locale`: the user's UI language as a BCP-47-ish tag, from the Windows preferred UI languages or `LC_ALL`, `LC_MESSAGES` and `LANG`
 - `lnk`: write a Windows `.lnk` with target, arguments, working folder, icon and description, read its arguments, list a folder's shortcuts
 - `schemehandler`: register a program for URL schemes (desktop entry and xdg-mime defaults, or HKCU classes), yield to an AppImage integrator's entry, hand each scheme back to its previous handler, forward a URL to that handler, and report who owns a scheme

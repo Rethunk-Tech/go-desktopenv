@@ -1,0 +1,55 @@
+//go:build !windows
+
+package wallpaper
+
+import (
+	"context"
+	"net/url"
+	"os/exec"
+	"strings"
+	"time"
+
+	"github.com/Rethunk-Tech/go-desktopenv/hostenv"
+)
+
+// runner runs gsettings with args and returns its standard output.
+type runner func(ctx context.Context, args ...string) (string, error)
+
+func execRunner(ctx context.Context, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "/usr/bin/gsettings", args...) //nolint:gosec // G204: binary is /usr/bin/gsettings; args are schema keys
+	cmd.Env = hostenv.Environ()
+	out, err := cmd.Output()
+	return string(out), err
+}
+
+// gsettingsValue reads one GNOME setting; the tool prints strings single-quoted.
+func gsettingsValue(run runner, schema, key string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	out, err := run(ctx, "get", schema, key)
+	return strings.Trim(strings.TrimSpace(out), "'"), err
+}
+
+// gnomeWallpaper returns the path of the GNOME desktop wallpaper, the dark variant under a dark colour scheme.
+// It is empty when GNOME's settings are unavailable or the wallpaper is not a local file.
+func gnomeWallpaper(run runner) string {
+	key := "picture-uri"
+	if scheme, err := gsettingsValue(run, "org.gnome.desktop.interface", "color-scheme"); err == nil && scheme == "prefer-dark" {
+		key = "picture-uri-dark"
+	}
+	uri, err := gsettingsValue(run, "org.gnome.desktop.background", key)
+	if err != nil {
+		return ""
+	}
+	u, err := url.Parse(uri)
+	if err != nil || u.Scheme != "file" {
+		return ""
+	}
+	return u.Path
+}
+
+// Path returns the path of the desktop wallpaper, choosing GNOME's dark variant when the colour scheme is prefer-dark.
+// It is empty when GNOME's settings are unavailable or the wallpaper is not a local file.
+func Path() string {
+	return gnomeWallpaper(execRunner)
+}
