@@ -3,8 +3,11 @@
 package autostart
 
 import (
+	"context"
 	"errors"
 	"strings"
+
+	"golang.org/x/sys/windows"
 
 	winreg "golang.org/x/sys/windows/registry"
 )
@@ -13,12 +16,12 @@ const runKey = `Software\Microsoft\Windows\CurrentVersion\Run`
 
 // Enable writes argv as a HKCU Run value named app, so the session starts it
 // at sign-in.
-func Enable(app string, argv []string) error {
+func Enable(_ context.Context, app string, argv []string) error {
 	return apply(app, argv, true)
 }
 
 // Disable removes the HKCU Run value named app.
-func Disable(app string) error { return apply(app, nil, false) }
+func Disable(_ context.Context, app string) error { return apply(app, nil, false) }
 
 // Enabled reports whether a HKCU Run value named app exists.
 func Enabled(app string) (bool, error) {
@@ -60,9 +63,10 @@ func apply(app string, argv []string, enable bool) error {
 }
 
 func command(argv []string) string {
-	s := `"` + argv[0] + `"`
-	if len(argv) == 1 {
-		return s
+	parts := make([]string, len(argv))
+	parts[0] = `"` + argv[0] + `"`
+	for i, a := range argv[1:] {
+		parts[i+1] = windows.EscapeArg(a)
 	}
-	return s + " " + strings.Join(argv[1:], " ")
+	return strings.Join(parts, " ")
 }

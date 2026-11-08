@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"time"
 
 	"github.com/Rethunk-Tech/go-desktopenv/desktopentry"
 	"github.com/Rethunk-Tech/go-desktopenv/flatpak"
@@ -17,16 +16,17 @@ import (
 // Enable arranges for argv to run at sign-in under the name app. Inside a
 // Flatpak it asks the Background portal; otherwise it writes app.desktop in
 // the XDG autostart folder. argv is the command the session runs, or the
-// command the portal starts inside the sandbox.
-func Enable(app string, argv []string) error {
-	return apply(app, argv, true)
+// command the portal starts inside the sandbox. ctx bounds the portal's consent dialog.
+func Enable(ctx context.Context, app string, argv []string) error {
+	return apply(ctx, app, argv, true)
 }
 
 // Disable removes the start-at-sign-in entry named app.
-func Disable(app string) error { return apply(app, nil, false) }
+func Disable(ctx context.Context, app string) error { return apply(ctx, app, nil, false) }
 
 // Enabled reports whether a start-at-sign-in entry named app exists in the
-// XDG autostart folder.
+// XDG autostart folder. Inside a Flatpak the portal's entry is outside the
+// sandbox's view, so Enabled reports false there; keep the choice yourself.
 func Enabled(app string) (bool, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -58,14 +58,12 @@ func Enabled(app string) (bool, error) {
 	return true, nil
 }
 
-func apply(app string, argv []string, enable bool) error {
+func apply(ctx context.Context, app string, argv []string, enable bool) error {
 	if enable && len(argv) == 0 {
 		return errors.New("autostart: empty command")
 	}
 	if flatpak.Inside() {
 		// The sandbox cannot write the host's autostart folder; the Background portal writes the entry for it.
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
 		return portal.SetAutostart(ctx, portal.Autostart{Enable: enable, Command: argv})
 	}
 	home, err := os.UserHomeDir()
@@ -108,5 +106,5 @@ func apply(app string, argv []string, enable bool) error {
 }
 
 func entry(app string, argv []string) string {
-	return "[Desktop Entry]\nType=Application\nName=" + app + "\nExec=" + desktopentry.Exec(argv...) + "\nX-GNOME-Autostart-enabled=true\n"
+	return "[Desktop Entry]\nType=Application\nName=" + desktopentry.Value(app) + "\nExec=" + desktopentry.Exec(argv...) + "\nX-GNOME-Autostart-enabled=true\n"
 }

@@ -12,13 +12,13 @@ import (
 
 func TestEnableSetsRunValue(t *testing.T) {
 	app := "DesktopEnvAutostartTest-" + strconv.Itoa(os.Getpid())
-	t.Cleanup(func() { _ = Disable(app) })
+	t.Cleanup(func() { _ = Disable(t.Context(), app) })
 	on, err := Enabled(app)
 	if err != nil || on {
 		t.Fatalf("Enabled before Enable = %v, %v", on, err)
 	}
 	exe := `C:\Program Files\App\app.exe`
-	if err := Enable(app, []string{exe}); err != nil {
+	if err := Enable(t.Context(), app, []string{exe}); err != nil {
 		t.Fatal(err)
 	}
 	on, err = Enabled(app)
@@ -38,7 +38,7 @@ func TestEnableSetsRunValue(t *testing.T) {
 	if got != want {
 		t.Fatalf("Run value = %q, want %q", got, want)
 	}
-	if err := Disable(app); err != nil {
+	if err := Disable(t.Context(), app); err != nil {
 		t.Fatal(err)
 	}
 	on, err = Enabled(app)
@@ -48,7 +48,7 @@ func TestEnableSetsRunValue(t *testing.T) {
 }
 
 func TestDisableMissingRunValue(t *testing.T) {
-	if err := Disable("DesktopEnvAutostartTestMissing"); err != nil {
+	if err := Disable(t.Context(), "DesktopEnvAutostartTestMissing"); err != nil {
 		t.Fatal(err)
 	}
 }

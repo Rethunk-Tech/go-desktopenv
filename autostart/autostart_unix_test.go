@@ -15,7 +15,7 @@ func TestEnableWritesAutostartFile(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", cfg)
 	t.Setenv("FLATPAK_ID", "")
 	argv := []string{"/usr/bin/my app", "--flag"}
-	if err := Enable("myapp", argv); err != nil {
+	if err := Enable(t.Context(), "myapp", argv); err != nil {
 		t.Fatal(err)
 	}
 	on, err := Enabled("myapp")
@@ -35,7 +35,7 @@ func TestEnableWritesAutostartFile(t *testing.T) {
 	if string(body) != want {
 		t.Fatalf("desktop file = %q, want %q", body, want)
 	}
-	if err := Disable("myapp"); err != nil {
+	if err := Disable(t.Context(), "myapp"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := root.Stat("myapp.desktop"); !os.IsNotExist(err) {
@@ -50,7 +50,7 @@ func TestEnableWritesAutostartFile(t *testing.T) {
 func TestDisableMissingAutostartDir(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	t.Setenv("FLATPAK_ID", "")
-	if err := Disable("myapp"); err != nil {
+	if err := Disable(t.Context(), "myapp"); err != nil {
 		t.Fatal(err)
 	}
 	on, err := Enabled("myapp")
