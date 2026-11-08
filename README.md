@@ -9,7 +9,7 @@
 
 ---
 
-What a packaged Go desktop app needs to reach its desktop: xdg-desktop-portal calls, Flatpak detection and host commands, per-user folders, console-less Windows children, Desktop Entry Exec values, an AppImage-free child environment, installed fonts, the system accent colour, the UI language, Windows shortcut files, URL scheme handling and browser native messaging. Module `github.com/Rethunk-Tech/go-desktopenv`, twelve packages: `portal`, `flatpak`, `userdirs`, `desktopentry`, `nowindow`, `hostenv`, `fonts`, `sysaccent`, `locale`, `lnk`, `schemehandler` and `nativemessaging`. Import only the ones you need; `portal` pulls in godbus, `lnk` go-ole on Windows, `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler` and `nativemessaging` `golang.org/x/sys` on Windows, and `schemehandler` and `nativemessaging` go-safefs. The rest pull in no third-party code.
+What a packaged Go desktop app needs to reach its desktop: xdg-desktop-portal calls, Flatpak detection and host commands, per-user folders, console-less Windows children, Desktop Entry Exec values, an AppImage-free child environment, installed fonts, the system accent colour, the UI language, Windows shortcut files, URL scheme handling, browser native messaging and start-at-sign-in. Module `github.com/Rethunk-Tech/go-desktopenv`, thirteen packages: `portal`, `flatpak`, `userdirs`, `desktopentry`, `nowindow`, `hostenv`, `fonts`, `sysaccent`, `locale`, `lnk`, `schemehandler`, `nativemessaging` and `autostart`. Import only the ones you need; `portal` pulls in godbus, `lnk` go-ole on Windows, `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler`, `nativemessaging` and `autostart` `golang.org/x/sys` on Windows, and `schemehandler` and `nativemessaging` go-safefs. The rest pull in no third-party code.
 
 A Flatpak app needs `--talk-name=org.freedesktop.Flatpak` for `flatpak`; portals need nothing extra. A `portal` call waits on a user dialog until its context ends, so set a deadline. `RetrieveSecret` works only inside a Flatpak.
 
@@ -35,6 +35,7 @@ A worked example and the contracts: [HUMANS.md](HUMANS.md).
 - `lnk`: write a Windows `.lnk` with target, arguments, working folder, icon and description, read its arguments, list a folder's shortcuts
 - `schemehandler`: register a program for URL schemes (desktop entry and xdg-mime defaults, or HKCU classes), yield to an AppImage integrator's entry, hand each scheme back to its previous handler, forward a URL to that handler, and report who owns a scheme
 - `nativemessaging`: write, remove and check browser native-messaging host manifests for Chromium-family browsers and Firefox, and read and write the length-prefixed stdio frames
+- `autostart`: enable, disable and report start-at-sign-in (XDG autostart or the Background portal inside a Flatpak, HKCU Run on Windows)
 
 ## Documentation
 
