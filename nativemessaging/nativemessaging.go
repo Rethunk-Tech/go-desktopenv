@@ -151,6 +151,15 @@ func Read(r io.Reader, limit int, v any) error {
 	return json.Unmarshal(b, v)
 }
 
+// framedSize is 4+n for a native-messaging frame, or an error if n cannot be stored in the
+// 4-byte length or 4+n would overflow the slice capacity.
+func framedSize(n int) (int, error) {
+	if n < 0 || n > math.MaxInt-4 || uint64(n) > math.MaxUint32 {
+		return 0, fmt.Errorf("nativemessaging: message of %d bytes cannot be framed", n)
+	}
+	return 4 + n, nil
+}
+
 // Write writes v to the browser as one message, its JSON after the length prefix, in a single Write.
 func Write(w io.Writer, v any) error {
 	b, err := json.Marshal(v)
@@ -158,10 +167,11 @@ func Write(w io.Writer, v any) error {
 		return err
 	}
 	n := len(b)
-	if n < 0 || uint64(n) > math.MaxUint32 {
-		return fmt.Errorf("nativemessaging: message of %d bytes cannot be framed", n)
+	size, err := framedSize(n)
+	if err != nil {
+		return err
 	}
-	frame := binary.NativeEndian.AppendUint32(make([]byte, 0, 4+n), uint32(n))
+	frame := binary.NativeEndian.AppendUint32(make([]byte, 0, size), uint32(n))
 	_, err = w.Write(append(frame, b...))
 	return err
 }
