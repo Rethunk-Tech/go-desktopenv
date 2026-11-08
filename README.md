@@ -28,7 +28,7 @@ A worked example and the contracts: [HUMANS.md](HUMANS.md).
 - `userdirs`: config and data folders per home, honouring only absolute environment values for the real home
 - `desktopentry`: escape, build and read Desktop Entry `Exec=` values
 - `nowindow`: no console window for a console child of a Windows GUI process
-- `hostenv`: a child process's environment without what an AppImage's AppRun injected
+- `hostenv`: a child process's environment without what an AppImage's AppRun injected; `Launchable` is `$APPIMAGE` when exe runs from that AppImage's `$APPDIR` mount, else exe
 - `fonts`: the installed font families, from fontconfig or the Windows registry
 - `sysaccent`: the desktop's accent colour as `#rrggbb`, from the DWM or the Settings portal
 - `locale`: the user's UI language as a BCP-47-ish tag, from the Windows preferred UI languages or `LC_ALL`, `LC_MESSAGES` and `LANG`

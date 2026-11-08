@@ -7,6 +7,8 @@ import (
 	"path"
 	"runtime"
 	"strings"
+
+	"github.com/Rethunk-Tech/go-safefs"
 )
 
 // Environ is os.Environ for a child process. Inside an AppImage ($APPIMAGE and $APPDIR set) it drops every
@@ -51,4 +53,18 @@ func scrub(env []string, appimage, appdir string) []string {
 		}
 	}
 	return out
+}
+
+// Launchable is the path a desktop entry, URL scheme or autostart should run: $APPIMAGE when exe
+// runs from that AppImage's $APPDIR mount, which vanishes on exit, else exe. A child started from an
+// AppImage inherits APPIMAGE, hence the check that exe lives under $APPDIR.
+func Launchable(exe string) string {
+	img, mount := os.Getenv("APPIMAGE"), os.Getenv("APPDIR")
+	if img == "" || mount == "" || !safefs.UnderRoot(mount, exe) {
+		return exe
+	}
+	if !safefs.IsFile(img) {
+		return exe
+	}
+	return img
 }

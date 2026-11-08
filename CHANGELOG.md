@@ -6,6 +6,10 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `hostenv.Launchable` returns `$APPIMAGE` when exe runs from that AppImage's `$APPDIR` mount, else exe.
+
 ## [0.7.0] - 2026-11-07
 
 ### Added
