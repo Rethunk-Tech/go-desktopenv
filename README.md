@@ -37,6 +37,7 @@ A worked example and the contracts: [HUMANS.md](HUMANS.md).
 - `schemehandler`: register a program for URL schemes (desktop entry and xdg-mime defaults, or HKCU classes), yield to an AppImage integrator's entry, hand each scheme back to its previous handler, forward a URL to that handler, and report who owns a scheme
 - `nativemessaging`: write, remove and check browser native-messaging host manifests for Chromium-family browsers and Firefox, and read and write the length-prefixed stdio frames
 - `autostart`: enable, disable and report start-at-sign-in (XDG autostart or the Background portal inside a Flatpak, HKCU Run on Windows)
+- `firewall`: read Windows Firewall profile types, check and add an inbound allow rule for a program, and self-elevate the add through runas
 
 ## Documentation
 

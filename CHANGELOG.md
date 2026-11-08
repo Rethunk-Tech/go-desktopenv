@@ -12,6 +12,7 @@ Notable changes to `go-desktopenv`. The format follows
 - `desktopentry.Entry.Marshal` writes a `.desktop` file from keys, and `desktopentry.SetKey` rewrites one key while keeping the rest in order.
 - `autostart.Enable`, `Disable` and `Enabled` start a program at sign-in (XDG autostart or the Background portal inside a Flatpak, HKCU Run on Windows).
 - `reveal.Open` shows a path in the system file manager, and `wallpaper.Path` reads the desktop wallpaper path.
+- `firewall`: read Windows Firewall profiles and inbound program rules, add an allow rule, and self-elevate the add through runas
 
 ## [0.7.0] - 2026-11-07
 
