@@ -34,6 +34,16 @@ func TestCheckOpenableRefusesWhatIsNotALocalFolderOrFile(t *testing.T) {
 	}
 }
 
+func TestOpenReportsWhenItCannot(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	if err := Open("relative"); err == nil {
+		t.Error("a relative path should be an error")
+	}
+	if err := Open(t.TempDir()); err == nil {
+		t.Error("a missing file manager should be an error")
+	}
+}
+
 func TestIsUNCNamesNetworkSharesInBothSpellings(t *testing.T) {
 	for path, want := range map[string]bool{
 		`\\server\share\x.exe`: true, `\\?\UNC\server\share`: true, `\\?\unc\server\share`: true,
