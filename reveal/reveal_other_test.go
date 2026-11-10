@@ -4,7 +4,6 @@ package reveal
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -15,12 +14,10 @@ func TestOpenStartsTheFileManager(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		name = "open"
 	}
-	bin, err := exec.LookPath("true")
-	if err != nil {
-		t.Fatal(err)
-	}
+	// A script, not a symlink to true: a coreutils multicall binary (Ubuntu 26.04's) refuses to
+	// run under another name.
 	dir := t.TempDir()
-	if err := os.Symlink(bin, filepath.Join(dir, name)); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\nexit 0\n"), 0o700); err != nil { //nolint:gosec // G306: the fake must be executable
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir)
