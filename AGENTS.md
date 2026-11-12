@@ -1,13 +1,13 @@
 # AGENTS.md
 
-Twelve packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
+Sixteen packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
 `flatpak` (sandbox detection and host commands), `userdirs` (per-user folders), `desktopentry` (Desktop Entry
 values), `nowindow` (console-less Windows children), `hostenv` (a child's environment outside an AppImage's),
 `fonts` (installed families), `sysaccent` (the desktop's accent colour), `locale` (the UI language), `lnk` (Windows shortcut files),
-`schemehandler` (URL scheme registration) and `nativemessaging` (browser native-messaging hosts). It imports no consumer package, no GUI toolkit and no
-branding; names, ids and wording are caller arguments. `portal` alone imports godbus; `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler` and `nativemessaging` import
-`golang.org/x/sys` and `lnk` imports go-ole, on Windows only, so a consumer of another package gains none of them.
-`schemehandler` and `nativemessaging` import go-safefs and share `internal/hostfile` for the host's files.
+`schemehandler` (URL scheme registration), `nativemessaging` (browser native-messaging hosts), `autostart` (start at sign-in), `reveal` (a path in the file manager), `wallpaper` (the desktop wallpaper) and `firewall` (Windows Firewall rules). It imports no consumer package, no GUI toolkit and no
+branding; names, ids and wording are caller arguments. `portal` alone imports godbus; `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler`, `nativemessaging`, `autostart`, `wallpaper` and `firewall` import
+`golang.org/x/sys` and `lnk` and `firewall` import go-ole, on Windows only, so a consumer of another package gains none of them.
+`schemehandler` and `nativemessaging` import go-safefs and share `internal/hostfile` for the host's files; `reveal` imports go-safefs.
 `sysaccent` reads through `portal` on Linux, and `fonts` runs `fc-list` with `hostenv`'s environment.
 
 ## Gate
@@ -15,7 +15,7 @@ branding; names, ids and wording are caller arguments. `portal` alone imports go
 `gate` is the command. Each override in `.gate.toml` is there because a runner
 cannot resolve that check from PATH. The `windows-latest` test job is the only place
 Windows-only behaviour runs: `nowindow`'s and `lnk`'s tests, the case-folded home test in `userdirs`, and the
-`locale`'s Windows tag-form test, the registry tests of `schemehandler` and `nativemessaging`, which write under a fresh `HKCU\Software\DesktopEnvTest…` key. `portal`'s D-Bus tests
+`locale`'s Windows tag-form test, the registry tests of `schemehandler` and `nativemessaging`, which write under a fresh `HKCU\Software\DesktopEnvTest…` key, `autostart`'s HKCU Run tests (a `DesktopEnvAutostartTest…` value), `reveal`'s explorer quoting test and `wallpaper`'s Desktop Wallpaper registry read. `portal`'s D-Bus tests
 and `flatpak`'s fake-`flatpak-spawn` tests run only on Linux (build tags `linux`, `unix`). `crosscompile` vets for
 Windows and for darwin, which is what builds `portal_other.go` and `nowindow_other.go`.
 
@@ -78,3 +78,7 @@ Windows and for darwin, which is what builds `portal_other.go` and `nowindow_oth
 | `schemehandler/schemehandler_linux.go`, `_windows.go`, `_other.go` | `Handler` and its calls per platform |
 | `nativemessaging/nativemessaging.go` | `Host`, `Manifest`, `State`, `Status`, `Read`, `Write` |
 | `nativemessaging/nativemessaging_linux.go`, `_windows.go`, `_other.go` | `Install`, `Uninstall`, `Status` per platform |
+| `autostart/autostart.go` | `Entry`, `ErrUnsupported`; `autostart_unix.go` and `autostart_windows.go` hold `Enable`, `Disable` and `Enabled`, `autostart_other.go` the `ErrUnsupported` stubs |
+| `reveal/reveal.go` | `Open`; `reveal_windows.go` quotes explorer's command line for a path with a comma, `reveal_other.go` leaves argv |
+| `wallpaper/wallpaper.go` | Package documentation; `wallpaper_other.go` and `wallpaper_windows.go` hold `Path` |
+| `firewall/firewall.go` | `Rule`, `ErrUnsupported`, `OnlyPublic`, `Blocked`; `firewall_windows.go` holds `CurrentProfileTypes`, `Rules`, `Add` and `Elevate`, `firewall_other.go` the `ErrUnsupported` stubs |
