@@ -24,6 +24,20 @@ func deleteTree(t *testing.T, path string) {
 	}
 }
 
+func TestRegisterRejectsEmptyAndStarSchemes(t *testing.T) {
+	root := `Software\DesktopEnvTest` + strconv.FormatInt(time.Now().UnixNano(), 36)
+	t.Cleanup(func() { deleteTree(t, root) })
+	h := &Handler{cfg: Config{Exe: `C:\App\app.exe`}, classes: root}
+	for _, scheme := range []string{"", "*", `bad\scheme`} {
+		if err := h.Register(scheme); err == nil {
+			t.Errorf("Register(%q): no error", scheme)
+		}
+	}
+	if _, err := registry.OpenKey(registry.CURRENT_USER, h.commandKey("*"), registry.QUERY_VALUE); err == nil {
+		t.Fatal(`created *\shell\open\command`)
+	}
+}
+
 func TestRegisterRestoreAndHandBack(t *testing.T) {
 	root := `Software\DesktopEnvTest` + strconv.FormatInt(time.Now().UnixNano(), 36)
 	t.Cleanup(func() { deleteTree(t, root) })
