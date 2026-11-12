@@ -3,6 +3,7 @@ package nativemessaging
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"testing"
 )
@@ -45,7 +46,7 @@ func FuzzWriteRead(f *testing.F) {
 		if !bytes.Equal(want, have) {
 			t.Fatalf("round-trip JSON: got %s want %s", have, want)
 		}
-		if err := Read(&buf, 1<<20, &got); err != io.EOF {
+		if err := Read(&buf, 1<<20, &got); !errors.Is(err, io.EOF) {
 			t.Fatalf("second Read: got %v want EOF", err)
 		}
 	})
