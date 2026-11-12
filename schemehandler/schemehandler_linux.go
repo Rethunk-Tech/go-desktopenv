@@ -364,11 +364,25 @@ func (h *Handler) DropDefault(mimes ...string) error {
 	}
 	lines := strings.Split(string(b), "\n")
 	ids := []string{h.cfg.DesktopID, h.handlerID()}
-	kept := slices.DeleteFunc(slices.Clone(lines), func(s string) bool {
+	kept := make([]string, 0, len(lines))
+	for _, s := range lines {
 		k, v, ok := strings.Cut(strings.TrimSpace(s), "=")
-		return ok && slices.Contains(mimes, k) && slices.Contains(ids, strings.TrimSuffix(v, ";"))
-	})
-	if len(kept) == len(lines) {
+		if !ok || !slices.Contains(mimes, k) {
+			kept = append(kept, s)
+			continue
+		}
+		var rest []string
+		for _, id := range strings.Split(strings.TrimSuffix(v, ";"), ";") {
+			if id != "" && !slices.Contains(ids, id) {
+				rest = append(rest, id)
+			}
+		}
+		if len(rest) == 0 {
+			continue
+		}
+		kept = append(kept, k+"="+strings.Join(rest, ";")+";")
+	}
+	if strings.Join(kept, "\n") == string(b) {
 		return nil
 	}
 	return host.Write(path, []byte(strings.Join(kept, "\n")), desktopPerm)

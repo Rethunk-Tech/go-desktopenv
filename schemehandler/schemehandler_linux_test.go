@@ -377,6 +377,21 @@ func TestFlatpakRestoreDropsOurDefaultFromTheHostsMimeapps(t *testing.T) {
 	}
 }
 
+func TestFlatpakRestoreDropsOnlyOurIdFromAMimeappsList(t *testing.T) {
+	h, _, _ := inFlatpak(t, "")
+	list := filepath.Join(under(h, "home"), ".config", "mimeapps.list")
+	write(t, list, "[Default Applications]\nx-scheme-handler/nxm="+appID+";firefox.desktop;\ntext/html=a.desktop\n")
+	if err := h.Register("nxm"); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Restore(nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := read(t, list); got != "[Default Applications]\nx-scheme-handler/nxm=firefox.desktop;\ntext/html=a.desktop\n" {
+		t.Errorf("host mimeapps.list: %q", got)
+	}
+}
+
 func TestFlatpakForwardsToThePreviousHandlerOnTheHost(t *testing.T) {
 	h, _, launched := inFlatpak(t, "")
 	entry := filepath.Join(h.apps(), "other.desktop")
