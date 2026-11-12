@@ -55,13 +55,18 @@ func Command(ctx context.Context, name string, args ...string) *exec.Cmd {
 	return CommandContext(ctx, name, args...)
 }
 
-// HostLookPath finds name on the host's PATH, or returns exec.ErrNotFound. It asks the host's sh rather than which,
-// which minimal hosts do not install. It always spawns flatpak-spawn, so call it only inside a Flatpak.
+// HostLookPath finds name on the host's PATH, or returns exec.ErrNotFound when the host answered with no absolute
+// path. A cancelled context or a failed spawn is returned as itself, not as ErrNotFound. It asks the host's sh
+// rather than which, which minimal hosts do not install. It always spawns flatpak-spawn, so call it only inside a
+// Flatpak.
 func HostLookPath(ctx context.Context, name string) (string, error) {
 	prog, args := HostArgv("", nil, "sh", "-c", `command -v -- "$1"`, "sh", name)
 	out, err := CommandContext(ctx, prog, args...).Output()
 	if err != nil {
-		return "", exec.ErrNotFound
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+		return "", err
 	}
 	// command -v prints a builtin or alias by its bare name, which is not a path. The host is Linux, so its paths
 	// are slash paths whatever OS this process runs on.

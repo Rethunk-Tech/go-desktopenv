@@ -3,6 +3,7 @@
 package flatpak
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -33,22 +34,32 @@ exit ` + strconv.Itoa(status) + "\n"
 
 func TestHostLookPath(t *testing.T) {
 	for name, c := range map[string]struct {
-		answer string
-		status int
-		want   string
-		found  bool
+		answer   string
+		status   int
+		want     string
+		found    bool
+		notFound bool
 	}{
-		"found":   {"/usr/bin/steam", 0, "/usr/bin/steam", true},
-		"missing": {"", 1, "", false},
-		"builtin": {"steam", 0, "", false},
+		"found":   {"/usr/bin/steam", 0, "/usr/bin/steam", true, false},
+		"missing": {"", 1, "", false, false},
+		"builtin": {"steam", 0, "", false, true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			fakeSpawn(t, lookPathScript(c.answer, c.status))
 			got, err := HostLookPath(t.Context(), "steam")
-			if c.found != (err == nil) || got != c.want || (!c.found && !errors.Is(err, exec.ErrNotFound)) {
+			if c.found != (err == nil) || got != c.want || c.notFound != errors.Is(err, exec.ErrNotFound) {
 				t.Fatalf("HostLookPath = %q, %v", got, err)
 			}
 		})
+	}
+}
+
+func TestHostLookPathCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := HostLookPath(ctx, "steam")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("HostLookPath cancelled: %v", err)
 	}
 }
 
