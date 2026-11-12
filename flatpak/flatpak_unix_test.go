@@ -55,7 +55,7 @@ func TestHostLookPath(t *testing.T) {
 }
 
 func TestHostLookPathCancelledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	_, err := HostLookPath(ctx, "steam")
 	if !errors.Is(err, context.Canceled) {

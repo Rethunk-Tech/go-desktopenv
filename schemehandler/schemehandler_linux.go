@@ -372,7 +372,7 @@ func (h *Handler) DropDefault(mimes ...string) error {
 			continue
 		}
 		var rest []string
-		for _, id := range strings.Split(strings.TrimSuffix(v, ";"), ";") {
+		for id := range strings.SplitSeq(strings.TrimSuffix(v, ";"), ";") {
 			if id != "" && !slices.Contains(ids, id) {
 				rest = append(rest, id)
 			}
