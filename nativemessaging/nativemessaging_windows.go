@@ -11,7 +11,7 @@ import (
 )
 
 // browsers are the HKCU keys under Software each browser reads: probe exists when it is installed, and its
-// NativeMessagingHosts subkey names the manifest. Brave and Vivaldi fall back to the Chromium and Chrome keys.
+// NativeMessagingHosts subkey names the manifest.
 var browsers = []struct {
 	name, probe string
 	firefox     bool
@@ -19,6 +19,8 @@ var browsers = []struct {
 	{name: "Google Chrome", probe: `Google\Chrome`},
 	{name: "Microsoft Edge", probe: `Microsoft\Edge`},
 	{name: "Chromium", probe: `Chromium`},
+	{name: "Brave", probe: `BraveSoftware\Brave-Browser`},
+	{name: "Vivaldi", probe: `Vivaldi`},
 	{name: "Firefox", probe: `Mozilla`, firefox: true},
 }
 

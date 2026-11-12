@@ -77,3 +77,22 @@ func TestInstallPointsEveryBrowserAtItsManifestAndUninstallUndoesIt(t *testing.T
 		t.Errorf("manifests survived Uninstall in %s", h.ManifestDir)
 	}
 }
+
+func TestInstallRegistersBraveAndVivaldi(t *testing.T) {
+	root := `Software\DesktopEnvTest` + strconv.FormatInt(time.Now().UnixNano(), 36)
+	t.Cleanup(func() { deleteTree(t, root) })
+	h := Host{
+		Name: "org.example.app", Path: `C:\App\app.exe`, AllowedOrigins: []string{"chrome-extension://abc/"},
+		AllowedExtensions: []string{"app@example.org"}, ManifestDir: t.TempDir(),
+	}
+	if err := h.install(root); err != nil {
+		t.Fatal(err)
+	}
+	for _, probe := range []string{`BraveSoftware\Brave-Browser`, `Vivaldi`} {
+		k, err := registry.OpenKey(registry.CURRENT_USER, h.hostKey(root, probe), registry.QUERY_VALUE)
+		if err != nil {
+			t.Fatalf("%s: %v", probe, err)
+		}
+		_ = k.Close()
+	}
+}
