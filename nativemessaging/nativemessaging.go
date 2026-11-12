@@ -79,11 +79,14 @@ func (h Host) manifest(path string, firefox bool) ([]byte, error) {
 		"path":        path,
 		"type":        "stdio",
 	}
+	allow, key := h.AllowedOrigins, "allowed_origins"
 	if firefox {
-		m["allowed_extensions"] = h.AllowedExtensions
-	} else {
-		m["allowed_origins"] = h.AllowedOrigins
+		allow, key = h.AllowedExtensions, "allowed_extensions"
 	}
+	if allow == nil {
+		allow = []string{}
+	}
+	m[key] = allow
 	return json.MarshalIndent(m, "", "  ")
 }
 
