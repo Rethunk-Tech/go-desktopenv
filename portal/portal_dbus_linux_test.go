@@ -68,6 +68,8 @@ type fake struct {
 	forger    *dbus.Conn                         // when set, also emits a forged Response from this connection
 	notified  map[string]map[string]dbus.Variant // Notification id -> options, until removed
 	malformed []any                              // when set, emit this as the Response body instead of (code, results)
+	holdPipe  bool                               // keep the Secret write end open so the caller blocks on the read
+	pipeW     *os.File
 }
 
 type (
@@ -172,12 +174,18 @@ func (l *launcher) Uninstall(string, map[string]dbus.Variant) *dbus.Error { retu
 func (s *secretIf) RetrieveSecret(sender dbus.Sender, fd dbus.UnixFD, options map[string]dbus.Variant) (dbus.ObjectPath, *dbus.Error) {
 	f := (*fake)(s)
 	f.mu.Lock()
-	secret := f.secret
+	secret, hold := f.secret, f.holdPipe
 	f.mu.Unlock()
 	if fd < 0 {
 		return "", dbus.MakeFailedError(errors.New("no descriptor"))
 	}
 	w := os.NewFile(uintptr(fd), "secret")
+	if hold {
+		f.mu.Lock()
+		f.pipeW = w
+		f.mu.Unlock()
+		return f.begin(sender, "RetrieveSecret", options)
+	}
 	_, _ = w.WriteString(secret)
 	_ = w.Close()
 	return f.begin(sender, "RetrieveSecret", options)
@@ -483,6 +491,45 @@ func TestLiveNotification(t *testing.T) {
 	}
 	if err := RemoveNotification(ctx5(t), n.ID); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRetrieveSecretRespectsCancel(t *testing.T) {
+	f := startFake(t)
+	f.set(func(f *fake) { f.holdPipe = true })
+	t.Cleanup(func() {
+		f.mu.Lock()
+		w := f.pipeW
+		f.mu.Unlock()
+		if w != nil {
+			_ = w.Close()
+		}
+	})
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { _, err := RetrieveSecret(ctx); done <- err }()
+	wait := time.Now().Add(2 * time.Second)
+	for {
+		f.mu.Lock()
+		w := f.pipeW
+		f.mu.Unlock()
+		if w != nil {
+			break
+		}
+		if time.Now().After(wait) {
+			t.Fatal("the portal never received the secret pipe")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("got %v, want context.Canceled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("RetrieveSecret did not return after cancel")
 	}
 }
 

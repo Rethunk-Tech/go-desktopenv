@@ -283,8 +283,21 @@ func RetrieveSecret(ctx context.Context) ([]byte, error) {
 	} else {
 		_ = r.SetReadDeadline(time.Now().Add(secretTimeout))
 	}
+	// A cancel without a deadline must still unblock the read; closing this channel stops the waiter if the read ends first.
+	wake := make(chan struct{})
+	defer close(wake)
+	go func() {
+		select {
+		case <-ctx.Done():
+			_ = r.SetReadDeadline(time.Unix(1, 0))
+		case <-wake:
+		}
+	}()
 	secret, err := io.ReadAll(io.LimitReader(r, maxSecret+1))
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		return nil, err
 	}
 	if len(secret) > maxSecret {

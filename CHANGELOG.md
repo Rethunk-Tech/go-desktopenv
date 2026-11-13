@@ -9,6 +9,7 @@ Notable changes to `go-desktopenv`. The format follows
 ### Fixed
 
 - `portal` treats a Request.Response with missing fields or the wrong types as an error, not as success.
+- `portal.RetrieveSecret` returns when the caller cancels, even if the secret pipe is still open.
 
 ## [0.9.1] - 2026-11-12
 
