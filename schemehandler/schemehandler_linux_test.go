@@ -485,6 +485,21 @@ func TestForwardDoesNotWaitForTheHandler(t *testing.T) {
 	}
 }
 
+func TestOwnerRejectsANonScheme(t *testing.T) {
+	h, r := newLinux(t, testConfig(), "vortex.desktop")
+	for _, scheme := range []string{"", "*", `bad\scheme`, "../x", "a/b"} {
+		if _, err := h.Owner(scheme); err == nil {
+			t.Errorf("Owner(%q): no error", scheme)
+		}
+	}
+	if len(r.calls) != 0 {
+		t.Errorf("xdg-mime ran for a rejected scheme: %v", r.calls)
+	}
+	if err := h.Release([]string{"*"}, nil); err == nil {
+		t.Fatal("Release(*)")
+	}
+}
+
 func TestNewRefusesADesktopIDThatIsNotAFileName(t *testing.T) {
 	for _, id := range []string{"", ".", "..", ".desktop", "a/b.desktop", `a\b.desktop`, "../x.desktop", "App", "../.."} {
 		cfg := testConfig()

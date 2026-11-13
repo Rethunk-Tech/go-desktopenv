@@ -102,6 +102,9 @@ func (h *Handler) SetDefault(mimes ...string) error {
 
 // Owner is the current owner of scheme.
 func (h *Handler) Owner(scheme string) (Owner, error) {
+	if err := checkScheme(scheme); err != nil {
+		return Owner{}, err
+	}
 	out, err := h.mimeDefaults("query", "default", schemeMime(scheme))
 	if err != nil {
 		return Owner{}, fmt.Errorf("xdg-mime query: %w", err)
@@ -309,6 +312,9 @@ func (h *Handler) Release(schemes []string, previous map[string]string) error {
 func (h *Handler) handBack(schemes []string, previous map[string]string) error {
 	var unowned []string
 	for _, scheme := range schemes {
+		if err := checkScheme(scheme); err != nil {
+			return err
+		}
 		if previous[scheme] == "" {
 			unowned = append(unowned, schemeMime(scheme))
 			continue

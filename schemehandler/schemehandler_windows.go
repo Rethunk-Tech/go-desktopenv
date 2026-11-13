@@ -30,6 +30,9 @@ func (h *Handler) command() string { return `"` + h.cfg.Exe + `" "%1"` }
 
 // Owner is the current owner of scheme. Its ID saves the open command, icon and name, for Restore.
 func (h *Handler) Owner(scheme string) (Owner, error) {
+	if err := checkScheme(scheme); err != nil {
+		return Owner{}, err
+	}
 	k, err := registry.OpenKey(registry.CURRENT_USER, h.commandKey(scheme), registry.QUERY_VALUE)
 	if errors.Is(err, registry.ErrNotExist) {
 		return Owner{}, nil

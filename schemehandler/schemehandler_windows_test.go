@@ -24,6 +24,15 @@ func deleteTree(t *testing.T, path string) {
 	}
 }
 
+func TestOwnerRejectsEmptyAndStarSchemes(t *testing.T) {
+	h := &Handler{cfg: Config{Exe: `C:\App\app.exe`}, classes: `Software\DesktopEnvTestOwner`}
+	for _, scheme := range []string{"", "*", `bad\scheme`} {
+		if _, err := h.Owner(scheme); err == nil {
+			t.Errorf("Owner(%q): no error", scheme)
+		}
+	}
+}
+
 func TestRegisterRejectsEmptyAndStarSchemes(t *testing.T) {
 	root := `Software\DesktopEnvTest` + strconv.FormatInt(time.Now().UnixNano(), 36)
 	t.Cleanup(func() { deleteTree(t, root) })
