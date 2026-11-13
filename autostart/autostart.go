@@ -20,6 +20,31 @@ func checkID(id string) error {
 	return nil
 }
 
+// quoteProgram is the program of a Windows HKCU Run command line: always quoted, with quotes and trailing
+// backslashes escaped so they cannot close the string.
+func quoteProgram(p string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	bs := 0
+	for i := 0; i < len(p); i++ {
+		switch p[i] {
+		case '\\':
+			bs++
+		case '"':
+			b.WriteString(strings.Repeat(`\`, 2*bs+1))
+			b.WriteByte('"')
+			bs = 0
+		default:
+			b.WriteString(strings.Repeat(`\`, bs))
+			b.WriteByte(p[i])
+			bs = 0
+		}
+	}
+	b.WriteString(strings.Repeat(`\`, 2*bs))
+	b.WriteByte('"')
+	return b.String()
+}
+
 // Entry is one program started at sign-in.
 type Entry struct {
 	// ID names the entry: the desktop file's stem on Linux, the Run value's name on Windows. Disable and Enabled take it.

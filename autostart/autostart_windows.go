@@ -70,7 +70,7 @@ func apply(app string, argv []string, enable bool) error {
 
 func command(argv []string) string {
 	parts := make([]string, len(argv))
-	parts[0] = `"` + argv[0] + `"`
+	parts[0] = quoteProgram(argv[0])
 	for i, a := range argv[1:] {
 		parts[i+1] = windows.EscapeArg(a)
 	}

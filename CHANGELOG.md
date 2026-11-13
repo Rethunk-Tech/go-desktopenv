@@ -11,6 +11,7 @@ Notable changes to `go-desktopenv`. The format follows
 - `portal` treats a Request.Response with missing fields or the wrong types as an error, not as success.
 - `portal.RetrieveSecret` returns when the caller cancels, even if the secret pipe is still open.
 - `autostart` refuses an ID that is empty, `.`, `..`, or holds a path separator, so it cannot name a registry default value or a file outside the autostart folder.
+- `autostart` escapes quotes and trailing backslashes in the Run value's program path so they cannot close the quoted string.
 
 ## [0.9.1] - 2026-11-12
 
