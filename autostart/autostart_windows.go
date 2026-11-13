@@ -25,6 +25,9 @@ func Disable(_ context.Context, id string) error { return apply(id, nil, false) 
 
 // Enabled reports whether a HKCU Run value named id exists.
 func Enabled(id string) (bool, error) {
+	if err := checkID(id); err != nil {
+		return false, err
+	}
 	key, err := winreg.OpenKey(winreg.CURRENT_USER, runKey, winreg.QUERY_VALUE)
 	if err != nil {
 		if errors.Is(err, winreg.ErrNotExist) {
@@ -44,6 +47,9 @@ func Enabled(id string) (bool, error) {
 }
 
 func apply(app string, argv []string, enable bool) error {
+	if err := checkID(app); err != nil {
+		return err
+	}
 	if enable && len(argv) == 0 {
 		return errors.New("autostart: empty command")
 	}

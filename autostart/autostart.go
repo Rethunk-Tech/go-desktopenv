@@ -4,11 +4,21 @@
 // Elsewhere Enable, Disable and Enabled return ErrUnsupported.
 package autostart
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // ErrUnsupported is returned by Enable, Disable and Enabled on a platform that
 // has no start-at-sign-in mechanism here.
 var ErrUnsupported = errors.New("autostart: unsupported")
+
+func checkID(id string) error {
+	if id == "" || id == "." || id == ".." || strings.ContainsAny(id, "/\\\x00") {
+		return errors.New("autostart: ID is not a single path element")
+	}
+	return nil
+}
 
 // Entry is one program started at sign-in.
 type Entry struct {

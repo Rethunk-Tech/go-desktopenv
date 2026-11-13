@@ -47,6 +47,30 @@ func TestEnableWritesAutostartFile(t *testing.T) {
 	}
 }
 
+func TestEnableRejectsAnIDThatIsNotOnePathElement(t *testing.T) {
+	cfg := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", cfg)
+	t.Setenv("FLATPAK_ID", "")
+	for _, id := range []string{"", ".", "..", "a/b", `a\b`, "../evil"} {
+		if err := Enable(t.Context(), Entry{ID: id, Argv: []string{"/bin/true"}}); err == nil {
+			t.Errorf("Enable(%q): no error", id)
+		}
+		if err := Disable(t.Context(), id); err == nil {
+			t.Errorf("Disable(%q): no error", id)
+		}
+		if _, err := Enabled(id); err == nil {
+			t.Errorf("Enabled(%q): no error", id)
+		}
+	}
+	entries, err := os.ReadDir(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("wrote under config home for a rejected id: %v", entries)
+	}
+}
+
 func TestDisableMissingAutostartDir(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	t.Setenv("FLATPAK_ID", "")

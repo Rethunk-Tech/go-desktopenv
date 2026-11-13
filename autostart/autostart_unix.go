@@ -27,6 +27,9 @@ func Disable(ctx context.Context, id string) error { return apply(ctx, Entry{ID:
 // XDG autostart folder. Inside a Flatpak the portal's entry is outside the
 // sandbox's view, so Enabled reports false there; keep the choice yourself.
 func Enabled(id string) (bool, error) {
+	if err := checkID(id); err != nil {
+		return false, err
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return false, err
@@ -58,6 +61,9 @@ func Enabled(id string) (bool, error) {
 }
 
 func apply(ctx context.Context, e Entry, enable bool) error {
+	if err := checkID(e.ID); err != nil {
+		return err
+	}
 	if enable && len(e.Argv) == 0 {
 		return errors.New("autostart: empty command")
 	}
