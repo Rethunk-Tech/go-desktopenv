@@ -127,3 +127,16 @@ func TestWindowsForwardEscapesTheLinkForACmdHandler(t *testing.T) {
 		t.Errorf("a CRT-parsed handler got %q, %v", args, err)
 	}
 }
+
+func TestForwardRefusesNonURL(t *testing.T) {
+	t.Parallel()
+	exec := func(string) (string, error) { return "browser %u", nil }
+	for _, link := range []string{"--gpu-launcher=sh", "-x", "", "/etc/passwd", "1http://x"} {
+		if _, _, err := linuxForwardArgv("b.desktop", link, exec); err == nil {
+			t.Errorf("linux accepted %q", link)
+		}
+		if _, _, err := windowsForwardArgv(previousID(`C:\b.exe "%1"`, "", ""), link); err == nil {
+			t.Errorf("windows accepted %q", link)
+		}
+	}
+}

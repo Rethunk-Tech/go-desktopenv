@@ -140,6 +140,9 @@ func readKey(path, prefix string) string {
 
 // entryKey is the first value of a key in the entry id, from the user's applications folder or a system one.
 func (h *Handler) entryKey(id, prefix string) (string, error) {
+	if id == "" || id != filepath.Base(id) {
+		return "", fmt.Errorf("desktop entry %q is not a file name", id)
+	}
 	for _, dir := range append([]string{h.apps()}, h.dataDirs...) {
 		if v := readKey(filepath.Join(dir, id), prefix); v != "" {
 			return v, nil
@@ -276,6 +279,9 @@ func (h *Handler) Register(schemes ...string) error {
 		return err
 	}
 	for _, scheme := range schemes {
+		if err := checkScheme(scheme); err != nil {
+			return err
+		}
 		if err := h.SetDefault(schemeMime(scheme)); err != nil {
 			return err
 		}
@@ -333,6 +339,9 @@ func (h *Handler) Forward(link, previous string) error {
 	if flatpak.Inside() {
 		if previous == "" {
 			return errNoPrevious
+		}
+		if err := checkLink(link); err != nil {
+			return err
 		}
 		_, err := h.host().Command("sh", "-c", launchOnHost, "sh", previous, link)
 		return err

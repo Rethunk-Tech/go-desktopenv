@@ -89,25 +89,6 @@ func (h *Handler) Register(schemes ...string) error {
 	return nil
 }
 
-func checkScheme(scheme string) error {
-	if scheme == "" || !schemeByte(scheme[0], true) {
-		return fmt.Errorf("schemehandler: %q is not a URL scheme", scheme)
-	}
-	for i := 1; i < len(scheme); i++ {
-		if !schemeByte(scheme[i], false) {
-			return fmt.Errorf("schemehandler: %q is not a URL scheme", scheme)
-		}
-	}
-	return nil
-}
-
-func schemeByte(c byte, first bool) bool {
-	if c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' {
-		return true
-	}
-	return !first && (c >= '0' && c <= '9' || c == '+' || c == '-' || c == '.')
-}
-
 func (h *Handler) registerScheme(scheme string) error {
 	if err := checkScheme(scheme); err != nil {
 		return err

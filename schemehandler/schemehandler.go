@@ -4,7 +4,11 @@
 // under HKCU\Software\Classes. Remembering each scheme's previous Owner.ID between runs is the caller's job.
 package schemehandler
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
 // ErrUnsupported is returned by every call on a system that is neither Linux nor Windows.
 var ErrUnsupported = errors.New("schemehandler: URL scheme registration is not supported on this system")
@@ -51,3 +55,32 @@ type Owner struct {
 }
 
 var errNoPrevious = errors.New("schemehandler: no previous handler")
+
+func checkScheme(scheme string) error {
+	if scheme == "" || !schemeByte(scheme[0], true) {
+		return fmt.Errorf("schemehandler: %q is not a URL scheme", scheme)
+	}
+	for i := 1; i < len(scheme); i++ {
+		if !schemeByte(scheme[i], false) {
+			return fmt.Errorf("schemehandler: %q is not a URL scheme", scheme)
+		}
+	}
+	return nil
+}
+
+func schemeByte(c byte, first bool) bool {
+	if c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' {
+		return true
+	}
+	return !first && (c >= '0' && c <= '9' || c == '+' || c == '-' || c == '.')
+}
+
+// checkLink refuses a link that does not begin with a URL scheme and a colon. Forward hands the link to another
+// program as an argument, and a link such as "--gpu-launcher=cmd" would be read as that program's option.
+func checkLink(link string) error {
+	scheme, _, ok := strings.Cut(link, ":")
+	if !ok || checkScheme(scheme) != nil {
+		return fmt.Errorf("schemehandler: %q is not a URL", link)
+	}
+	return nil
+}

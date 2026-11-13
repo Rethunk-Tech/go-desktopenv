@@ -10,6 +10,9 @@ import (
 
 // windowsForwardArgv is argv for the saved Windows handler, with link as one element in place of %1.
 func windowsForwardArgv(previousSaved, link string) (string, []string, error) {
+	if err := checkLink(link); err != nil {
+		return "", nil, err
+	}
 	p := splitPrevious(previousSaved)
 	if strings.TrimSpace(p.cmd) == "" {
 		return "", nil, errNoPrevious
@@ -59,6 +62,9 @@ func runsThroughCmd(program string) bool {
 func linuxForwardArgv(previousDesktopID, link string, execLine func(string) (string, error)) (string, []string, error) {
 	if previousDesktopID == "" {
 		return "", nil, errNoPrevious
+	}
+	if err := checkLink(link); err != nil {
+		return "", nil, err
 	}
 	exec, err := execLine(previousDesktopID)
 	if err != nil {
