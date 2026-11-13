@@ -45,6 +45,19 @@ type Rule struct {
 	Profiles int32
 }
 
+func checkAdd(exe, name, publicName string) error {
+	if exe == "" {
+		return errors.New("firewall: empty application path")
+	}
+	if name == "" || publicName == "" {
+		return errors.New("firewall: empty rule name")
+	}
+	if strings.ContainsRune(exe, 0) || strings.ContainsRune(name, 0) || strings.ContainsRune(publicName, 0) {
+		return errors.New("firewall: name holds a NUL")
+	}
+	return nil
+}
+
 func (r Rule) forExe(exe string) bool {
 	return r.Enabled && r.Inbound && strings.EqualFold(r.App, exe)
 }

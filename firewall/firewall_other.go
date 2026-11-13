@@ -17,6 +17,9 @@ func Rules() ([]Rule, error) {
 // Add removes inbound block rules for exe and writes an inbound allow rule. It
 // returns ErrUnsupported on this operating system.
 func Add(exe, name, publicName string, anyAddr bool) error {
+	if err := checkAdd(exe, name, publicName); err != nil {
+		return err
+	}
 	return ErrUnsupported
 }
 

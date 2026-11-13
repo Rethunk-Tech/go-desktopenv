@@ -74,6 +74,19 @@ func TestBlocked(t *testing.T) {
 	}
 }
 
+func TestAddRejectsEmptyExeAndNames(t *testing.T) {
+	for _, c := range []struct{ exe, name, pub string }{
+		{"", "n", "p"},
+		{`C:\a.exe`, "", "p"},
+		{`C:\a.exe`, "n", ""},
+	} {
+		err := Add(c.exe, c.name, c.pub, false)
+		if err == nil || errors.Is(err, ErrUnsupported) {
+			t.Errorf("Add(%q, %q, %q) = %v, want a validation error", c.exe, c.name, c.pub, err)
+		}
+	}
+}
+
 func TestUnsupported(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("stubs are for other operating systems")

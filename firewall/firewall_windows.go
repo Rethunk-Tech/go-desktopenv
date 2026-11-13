@@ -140,6 +140,9 @@ func Rules() ([]Rule, error) {
 // when anyAddr, or an allow on Domain and Private with an explicit Public
 // block so Windows never prompts.
 func Add(exe, name, publicName string, anyAddr bool) error {
+	if err := checkAdd(exe, name, publicName); err != nil {
+		return err
+	}
 	return policy(func(_, set *ole.IDispatch) error {
 		// Rules are removed by name, and a name can be shared with another program's rule, so each match is first
 		// renamed to a token of its own.

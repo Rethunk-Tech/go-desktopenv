@@ -13,6 +13,7 @@ Notable changes to `go-desktopenv`. The format follows
 - `autostart` refuses an ID that is empty, `.`, `..`, or holds a path separator, so it cannot name a registry default value or a file outside the autostart folder.
 - `autostart` escapes quotes and trailing backslashes in the Run value's program path so they cannot close the quoted string.
 - `schemehandler.Owner` and `Release` refuse a name that is not a URL scheme before it becomes a registry key or an xdg-mime type.
+- `firewall.Add` refuses an empty application path or rule name, so a rule cannot apply to every program.
 
 ## [0.9.1] - 2026-11-12
 
