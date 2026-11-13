@@ -81,11 +81,13 @@ func request(ctx context.Context, conn *dbus.Conn, method, token string, args ..
 			}
 			sig = s
 		}
-		if sig.Path != handle || len(sig.Body) < 2 {
+		if sig.Path != handle {
 			continue
 		}
-		code, _ := sig.Body[0].(uint32)
-		results, _ := sig.Body[1].(map[string]dbus.Variant)
+		code, results, err := decodeResponse(sig.Body)
+		if err != nil {
+			return nil, err
+		}
 		switch code {
 		case 0:
 			return results, nil
@@ -95,6 +97,23 @@ func request(ctx context.Context, conn *dbus.Conn, method, token string, args ..
 			return nil, fmt.Errorf("%s failed", method)
 		}
 	}
+}
+
+// decodeResponse reads Request.Response's (u a{sv}). A missing field or a wrong type is the response, not a stray
+// signal: the match already names this handle.
+func decodeResponse(body []any) (uint32, map[string]dbus.Variant, error) {
+	if len(body) < 2 {
+		return 0, nil, errors.New("the portal response was truncated")
+	}
+	code, ok := body[0].(uint32)
+	if !ok {
+		return 0, nil, errors.New("the portal response code is not a uint32")
+	}
+	results, ok := body[1].(map[string]dbus.Variant)
+	if !ok {
+		return 0, nil, errors.New("the portal response results are not a map")
+	}
+	return code, results, nil
 }
 
 func closeRequest(ctx context.Context, conn *dbus.Conn, handle dbus.ObjectPath) {

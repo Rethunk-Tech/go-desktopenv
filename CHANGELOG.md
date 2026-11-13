@@ -6,6 +6,10 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- `portal` treats a Request.Response with missing fields or the wrong types as an error, not as success.
+
 ## [0.9.1] - 2026-11-12
 
 ### Fixed

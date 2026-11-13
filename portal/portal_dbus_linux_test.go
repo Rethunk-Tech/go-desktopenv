@@ -54,19 +54,20 @@ func requireBus(t *testing.T) {
 type fake struct {
 	mu sync.Mutex
 
-	conn     *dbus.Conn
-	response uint32 // Response code sent after a request method
-	silent   bool   // never send a Response
-	results  map[string]dbus.Variant
-	secret   string
-	missing  bool         // GetDesktopEntry reports NOENT
-	setting  dbus.Variant // Settings.Read answer; notFound overrides it
-	notFound bool
-	entry    string // Install's entry, recorded
-	closed   chan dbus.ObjectPath
-	seen     map[string]map[string]dbus.Variant // request method -> options
-	forger   *dbus.Conn                         // when set, also emits a forged Response from this connection
-	notified map[string]map[string]dbus.Variant // Notification id -> options, until removed
+	conn      *dbus.Conn
+	response  uint32 // Response code sent after a request method
+	silent    bool   // never send a Response
+	results   map[string]dbus.Variant
+	secret    string
+	missing   bool         // GetDesktopEntry reports NOENT
+	setting   dbus.Variant // Settings.Read answer; notFound overrides it
+	notFound  bool
+	entry     string // Install's entry, recorded
+	closed    chan dbus.ObjectPath
+	seen      map[string]map[string]dbus.Variant // request method -> options
+	forger    *dbus.Conn                         // when set, also emits a forged Response from this connection
+	notified  map[string]map[string]dbus.Variant // Notification id -> options, until removed
+	malformed []any                              // when set, emit this as the Response body instead of (code, results)
 }
 
 type (
@@ -113,7 +114,7 @@ func (f *fake) begin(sender dbus.Sender, method string, options map[string]dbus.
 	handle := handlePath(string(sender), token)
 	f.mu.Lock()
 	f.seen[method] = options
-	code, silent, results := f.response, f.silent, f.results
+	code, silent, results, malformed := f.response, f.silent, f.results, f.malformed
 	f.mu.Unlock()
 	if err := f.conn.Export(&requestObj{f, handle}, handle, requestIf); err != nil {
 		return "", dbus.MakeFailedError(err)
@@ -127,6 +128,10 @@ func (f *fake) begin(sender dbus.Sender, method string, options map[string]dbus.
 	if !silent {
 		go func() {
 			time.Sleep(20 * time.Millisecond)
+			if malformed != nil {
+				_ = f.conn.Emit(handle, requestIf+".Response", malformed...)
+				return
+			}
 			_ = f.conn.Emit(handle, requestIf+".Response", code, results)
 		}()
 	}
@@ -478,6 +483,25 @@ func TestLiveNotification(t *testing.T) {
 	}
 	if err := RemoveNotification(ctx5(t), n.ID); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestMalformedResponseIsAnError(t *testing.T) {
+	f := startFake(t)
+	granted := map[string]dbus.Variant{"autostart": dbus.MakeVariant(true)}
+	for _, body := range [][]any{
+		{uint32(0)},
+		{"0", granted},
+		{uint32(0), "nope"},
+		{int32(0), granted},
+	} {
+		f.set(func(f *fake) { f.malformed = body })
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		err := SetAutostart(ctx, Autostart{Enable: false})
+		cancel()
+		if err == nil || errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("body %#v: got %v, want a response error", body, err)
+		}
 	}
 }
 
