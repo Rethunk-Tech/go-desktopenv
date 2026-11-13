@@ -326,9 +326,9 @@ func TestAnIntegratorReplacesOurStaleEntry(t *testing.T) {
 
 // inFlatpak is newLinux inside a Flatpak whose host is this machine: a host sh script runs here, against the test's
 // folders, xdg-mime goes to the recorder, and a host gio only records what it was asked to launch.
-func inFlatpak(t *testing.T, nxmOwner string) (*Handler, *recorder, string) {
+func inFlatpak(t *testing.T) (*Handler, *recorder, string) {
 	t.Helper()
-	h, r := newLinux(t, testConfig(), nxmOwner)
+	h, r := newLinux(t, testConfig(), "")
 	t.Setenv("FLATPAK_ID", "org.example.App")
 	bin := t.TempDir()
 	launched := filepath.Join(bin, "launched")
@@ -353,7 +353,7 @@ func inFlatpak(t *testing.T, nxmOwner string) (*Handler, *recorder, string) {
 }
 
 func TestFlatpakRestoreDropsOurDefaultFromTheHostsMimeapps(t *testing.T) {
-	h, r, _ := inFlatpak(t, "")
+	h, r, _ := inFlatpak(t)
 	hostConfig := filepath.Join(under(h, "home"), ".config")
 	list := filepath.Join(hostConfig, "mimeapps.list")
 	write(t, list, "[Default Applications]\nx-scheme-handler/nxm="+appID+";\ntext/html=a.desktop\n")
@@ -378,7 +378,7 @@ func TestFlatpakRestoreDropsOurDefaultFromTheHostsMimeapps(t *testing.T) {
 }
 
 func TestFlatpakRestoreDropsOnlyOurIdFromAMimeappsList(t *testing.T) {
-	h, _, _ := inFlatpak(t, "")
+	h, _, _ := inFlatpak(t)
 	list := filepath.Join(under(h, "home"), ".config", "mimeapps.list")
 	write(t, list, "[Default Applications]\nx-scheme-handler/nxm="+appID+";firefox.desktop;\ntext/html=a.desktop\n")
 	if err := h.Register("nxm"); err != nil {
@@ -393,7 +393,7 @@ func TestFlatpakRestoreDropsOnlyOurIdFromAMimeappsList(t *testing.T) {
 }
 
 func TestFlatpakForwardsToThePreviousHandlerOnTheHost(t *testing.T) {
-	h, _, launched := inFlatpak(t, "")
+	h, _, launched := inFlatpak(t)
 	entry := filepath.Join(h.apps(), "other.desktop")
 	write(t, entry, "[Desktop Entry]\nExec=other %u\n")
 	if err := h.Forward("nxm://stardewvalley/mods/1", "other.desktop"); err != nil {
@@ -504,7 +504,7 @@ func TestEntryKeyIgnoresOtherGroups(t *testing.T) {
 }
 
 func TestFlatpakForwardRefusesAPreviousOutsideTheApplicationsFolders(t *testing.T) {
-	h, _, launched := inFlatpak(t, "")
+	h, _, launched := inFlatpak(t)
 	write(t, filepath.Join(h.apps(), "other.desktop"), "[Desktop Entry]\nExec=other %u\n")
 	write(t, filepath.Join(h.apps(), "..", "evil.desktop"), "[Desktop Entry]\nExec=evil %u\n")
 	if err := h.Forward("nxm://x", "../evil.desktop"); err == nil {
