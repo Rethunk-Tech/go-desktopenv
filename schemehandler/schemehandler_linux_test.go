@@ -502,3 +502,15 @@ func TestEntryKeyIgnoresOtherGroups(t *testing.T) {
 		t.Fatalf("Exec = %q", got)
 	}
 }
+
+func TestFlatpakForwardRefusesAPreviousOutsideTheApplicationsFolders(t *testing.T) {
+	h, _, launched := inFlatpak(t, "")
+	write(t, filepath.Join(h.apps(), "other.desktop"), "[Desktop Entry]\nExec=other %u\n")
+	write(t, filepath.Join(h.apps(), "..", "evil.desktop"), "[Desktop Entry]\nExec=evil %u\n")
+	if err := h.Forward("nxm://x", "../evil.desktop"); err == nil {
+		t.Fatal("forwarded to an entry outside the applications folders")
+	}
+	if _, err := os.Stat(launched); err == nil {
+		t.Fatalf("host gio ran: %q", read(t, launched))
+	}
+}

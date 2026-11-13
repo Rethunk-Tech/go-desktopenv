@@ -340,6 +340,10 @@ func (h *Handler) Forward(link, previous string) error {
 		if previous == "" {
 			return errNoPrevious
 		}
+		// The host script joins previous to each applications folder, so a path in it would reach any entry.
+		if previous != filepath.Base(previous) {
+			return fmt.Errorf("desktop entry %q is not a file name", previous)
+		}
 		if err := checkLink(link); err != nil {
 			return err
 		}
