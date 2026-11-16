@@ -418,11 +418,25 @@ func (h *Handler) WriteEntry() error {
 	}
 	current, _ := safefs.ReadFile(h.desktopPath())
 	mimes := h.schemeMimes()
-	withSchemes := len(mimes) > 0 && strings.Contains(string(current), mimes[0])
+	withSchemes := len(mimes) > 0 && listsMime(current, mimes[0])
 	if string(current) == h.desktopFile(withSchemes) {
 		return nil
 	}
 	return h.writeDesktop(withSchemes)
+}
+
+// listsMime reports whether the entry's MimeType lists mime as an item, not merely as the start of one.
+func listsMime(entry []byte, mime string) bool {
+	for line := range strings.SplitSeq(string(entry), "\n") {
+		v, ok := strings.CutPrefix(line, "MimeType=")
+		if !ok {
+			continue
+		}
+		return slices.ContainsFunc(strings.Split(strings.TrimSuffix(v, ";"), ";"), func(item string) bool {
+			return strings.TrimSpace(item) == mime
+		})
+	}
+	return false
 }
 
 // EntryProgram is the program the user entry runs, read back from the quoted Exec this package writes, or "" when

@@ -194,6 +194,24 @@ func TestWriteEntryKeepsTheSchemesAndIsIdempotent(t *testing.T) {
 	}
 }
 
+// A scheme whose MIME type is a prefix of another in the entry is not listed by the entry.
+func TestWriteEntryAddsNoSchemeTheEntryDoesNotList(t *testing.T) {
+	cfg := testConfig()
+	cfg.Schemes = []string{"http"}
+	cfg.Entry.MimeTypes = []string{"x-scheme-handler/https"}
+	h, _ := newLinux(t, cfg, "")
+	if err := h.Restore(map[string]string{"http": "firefox.desktop"}); err != nil {
+		t.Fatal(err)
+	}
+	before := read(t, h.desktopPath())
+	if err := h.WriteEntry(); err != nil {
+		t.Fatal(err)
+	}
+	if got := read(t, h.desktopPath()); got != before {
+		t.Errorf("WriteEntry changed the restored entry:\n%s", got)
+	}
+}
+
 func TestEntryProgramReadsBackWhateverThePathHolds(t *testing.T) {
 	cfg := testConfig()
 	cfg.Exe = "/opt/50%off/$x `b` \\q \"z\" d"
