@@ -37,12 +37,19 @@ func HostConfigHome(home string) string { return hostPick("XDG_CONFIG_HOME", hom
 // HostDataHome is HostConfigHome for the data home.
 func HostDataHome(home string) string { return hostPick("XDG_DATA_HOME", home, ".local", "share") }
 
-// FlatpakApp is home/.var/app/<appID>, the per-user folder Flatpak gives each app.
+// FlatpakApp is home/.var/app/<appID>, the per-user folder Flatpak gives each app. appID becomes one path element, so
+// a value that is not one ("" , "." , ".." or anything holding a separator) would escape .var/app and returns "".
 func FlatpakApp(home, appID string) string {
-	if home == "" {
+	if home == "" || !isAppID(appID) {
 		return ""
 	}
 	return filepath.Join(home, ".var", "app", appID)
+}
+
+// isAppID reports whether an app id can be one path element under ~/.var/app. filepath.IsLocal rejects "", ".." and
+// absolute paths but accepts "a/b" and ".", so the base comparison supplies the separator and "." rules.
+func isAppID(appID string) bool {
+	return appID != "." && appID != ".." && appID == filepath.Base(appID) && filepath.IsLocal(appID)
 }
 
 func hostPick(name, home string, def ...string) string {

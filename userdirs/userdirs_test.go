@@ -119,4 +119,9 @@ func TestFlatpakApp(t *testing.T) {
 	if got := FlatpakApp("", "x"); got != "" {
 		t.Errorf("empty home: %q", got)
 	}
+	for _, appID := range []string{"", ".", "..", "../../.local/bin", "a/b", "/etc"} {
+		if got := FlatpakApp(home, appID); got != "" {
+			t.Errorf("appID %q escapes .var/app: %q", appID, got)
+		}
+	}
 }
