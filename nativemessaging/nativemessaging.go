@@ -51,23 +51,21 @@ func (h Host) Manifest(firefox bool) ([]byte, error) {
 }
 
 // ErrBadName is the error for a Host.Name a browser would not accept and that could not be one file name.
-var ErrBadName = errors.New("nativemessaging: Host.Name must be letters, digits, '.', '_' or '-', starting with a letter or digit")
+var ErrBadName = errors.New("nativemessaging: Host.Name must be lowercase letters, digits, '_' and '.', with no leading, trailing or consecutive '.'")
 
-func isAlnum(c byte) bool {
-	return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
-}
-
-// checkName refuses a name that is empty, starts with a separator or dot, holds "..", or has any byte outside
-// letters, digits, '.', '_' and '-'. The name becomes a file name on Linux and a registry key on Windows.
+// checkName refuses a name that is empty, starts or ends with '.', holds "..", or has any byte outside
+// lowercase letters, digits, '.' and '_'. The name becomes a file name on Linux and a registry key on Windows.
 func (h Host) checkName() error {
 	n := h.Name
-	if n == "" || strings.Contains(n, "..") || !isAlnum(n[0]) {
+	if n == "" || n[0] == '.' || n[len(n)-1] == '.' || strings.Contains(n, "..") {
 		return ErrBadName
 	}
 	for i := range len(n) {
-		if c := n[i]; !isAlnum(c) && c != '.' && c != '_' && c != '-' {
-			return ErrBadName
+		c := n[i]
+		if c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c == '.' || c == '_' {
+			continue
 		}
+		return ErrBadName
 	}
 	return nil
 }
