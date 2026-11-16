@@ -203,6 +203,26 @@ func TestRunReplacesTheHostPrograms(t *testing.T) {
 	}
 }
 
+func TestAFlatpakIDThatEscapesTheAppFolderIsRefused(t *testing.T) {
+	home, _ := fakeHome(t)
+	inFlatpak(t)
+	t.Setenv("FLATPAK_ID", "../../.local/bin")
+	mkdirs(t, filepath.Join(home, ".config", "vivaldi"), filepath.Join(home, ".mozilla"))
+	h := testHost("/app/bin/app")
+	if err := h.Install(); err == nil {
+		t.Fatal("Install accepted a FLATPAK_ID that is not one path element")
+	}
+	if _, err := os.Stat(filepath.Join(home, ".local", "bin", "native-host")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("wrapper written outside ~/.var/app: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(home, ".config", "vivaldi", "NativeMessagingHosts", "org.example.app.json")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("manifest written for a refused FLATPAK_ID: %v", err)
+	}
+	if _, err := h.Status(); err == nil {
+		t.Fatal("Status accepted a FLATPAK_ID that is not one path element")
+	}
+}
+
 func TestAHostNameThatIsNotAFileNameIsRefused(t *testing.T) {
 	home, _ := fakeHome(t)
 	for _, name := range []string{"", ".", "..", "../../../evil", "a/b", `a\b`, ".hidden", "-x", "a..b", "a b", "a\x00b"} {

@@ -2,6 +2,7 @@ package nativemessaging
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -75,7 +76,11 @@ func (h Host) exe() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(userdirs.FlatpakApp(home, os.Getenv("FLATPAK_ID")), "native-host"), nil
+	app := userdirs.FlatpakApp(home, os.Getenv("FLATPAK_ID"))
+	if app == "" {
+		return "", fmt.Errorf("nativemessaging: FLATPAK_ID %q is not a single path element", os.Getenv("FLATPAK_ID"))
+	}
+	return filepath.Join(app, "native-host"), nil
 }
 
 var shellSafe = regexp.MustCompile(`^[A-Za-z0-9._/=+-]+$`)
