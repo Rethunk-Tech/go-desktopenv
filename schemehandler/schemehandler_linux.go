@@ -206,11 +206,11 @@ func (h *Handler) integrator() string {
 	if err != nil {
 		return ""
 	}
-	own := strings.TrimSuffix(h.cfg.DesktopID, ".desktop")
+	own := h.cfg.DesktopID
 	found := ""
 	for _, e := range entries {
 		name := e.Name()
-		if !strings.HasSuffix(name, ".desktop") || strings.HasPrefix(name, own) {
+		if !strings.HasSuffix(name, ".desktop") || name == own {
 			continue
 		}
 		argv := desktopentry.SplitExec(readKey(filepath.Join(h.apps(), name), "Exec="))

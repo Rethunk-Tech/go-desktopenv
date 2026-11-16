@@ -310,6 +310,23 @@ func TestAnIntegratorsEntryIsTheHandler(t *testing.T) {
 	}
 }
 
+func TestAnIntegratorsEntryNamedAfterTheAppIsTheHandler(t *testing.T) {
+	cfg := testConfig()
+	cfg.DesktopID = "app.desktop"
+	cfg.Exe = "/home/u/Apps/app.appimage_0.appimage"
+	h, r := newLinux(t, cfg, "vortex.desktop")
+	writeApp(t, h, gearLever, gearLeverEntry(cfg.Exe))
+	if err := h.Register("nxm"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(h.desktopPath()); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("wrote its own entry beside the integrator's: %v", err)
+	}
+	if r.byMime[schemeMime("nxm")] != gearLever {
+		t.Errorf("default %q", r.byMime[schemeMime("nxm")])
+	}
+}
+
 func TestAnIntegratorReplacesOurStaleEntry(t *testing.T) {
 	cfg := testConfig()
 	cfg.Exe = "/home/u/Apps/app.appimage_0.appimage"
