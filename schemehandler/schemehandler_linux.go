@@ -384,9 +384,13 @@ func (h *Handler) DropDefault(mimes ...string) error {
 	lines := strings.Split(string(b), "\n")
 	ids := []string{h.cfg.DesktopID, h.handlerID()}
 	kept := make([]string, 0, len(lines))
+	inDefaults := false
 	for _, s := range lines {
+		if group, ok := strings.CutPrefix(strings.TrimSpace(s), "["); ok {
+			inDefaults = strings.TrimSuffix(group, "]") == "Default Applications"
+		}
 		k, v, ok := strings.Cut(strings.TrimSpace(s), "=")
-		if !ok || !slices.Contains(mimes, k) {
+		if !inDefaults || !ok || !slices.Contains(mimes, k) {
 			kept = append(kept, s)
 			continue
 		}

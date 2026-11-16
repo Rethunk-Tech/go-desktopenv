@@ -212,6 +212,21 @@ func TestWriteEntryAddsNoSchemeTheEntryDoesNotList(t *testing.T) {
 	}
 }
 
+// DropDefault removes the default line only: a [Removed Associations] line is what hides the app from the type.
+func TestDropDefaultLeavesTheRemovedAssociationsGroup(t *testing.T) {
+	h, _ := newLinux(t, testConfig(), "")
+	list := filepath.Join(under(h, "config"), "mimeapps.list")
+	mime := schemeMime("nxm")
+	write(t, list, "[Default Applications]\n"+mime+"="+appID+";\n[Removed Associations]\n"+mime+"="+appID+";\n")
+	if err := h.DropDefault(mime); err != nil {
+		t.Fatal(err)
+	}
+	want := "[Default Applications]\n[Removed Associations]\n" + mime + "=" + appID + ";\n"
+	if got := read(t, list); got != want {
+		t.Errorf("mimeapps.list: %q", got)
+	}
+}
+
 func TestEntryProgramReadsBackWhateverThePathHolds(t *testing.T) {
 	cfg := testConfig()
 	cfg.Exe = "/opt/50%off/$x `b` \\q \"z\" d"
