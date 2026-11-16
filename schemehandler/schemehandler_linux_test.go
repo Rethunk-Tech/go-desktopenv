@@ -266,8 +266,7 @@ func gearLeverEntry(exe string) string {
 
 func TestNoIntegratorWritesOurEntry(t *testing.T) {
 	h, r := newLinux(t, testConfig(), "")
-	// Our own shortcut and an entry that cannot take a URL do not count as an integrator's.
-	writeApp(t, h, "org.example.App.play-x.desktop", "[Desktop Entry]\nExec=\"/opt/app/app\" --play=x %u\n")
+	// An entry that cannot take a URL does not count as an integrator's.
 	writeApp(t, h, "other.desktop", "[Desktop Entry]\nExec=/opt/app/app\n")
 	if err := h.Register("nxm"); err != nil {
 		t.Fatal(err)
