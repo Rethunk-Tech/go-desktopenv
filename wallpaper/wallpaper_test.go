@@ -36,3 +36,29 @@ func TestGnomeWallpaper(t *testing.T) {
 		}
 	}
 }
+
+func FuzzGnomeWallpaper(f *testing.F) {
+	f.Add("prefer-dark", "file:///d%20k.jpg")
+	f.Add("default", "file:///l.jpg")
+	f.Add("", "https://x/l.jpg")
+	f.Add("", "file:///l.jpg")
+	f.Add("prefer-dark", "not a uri")
+	f.Fuzz(func(t *testing.T, scheme, uri string) {
+		got := gnomeWallpaper(func(_ context.Context, args ...string) (string, error) {
+			key := args[len(args)-1]
+			switch key {
+			case "color-scheme":
+				return "'" + scheme + "'\n", nil
+			case "picture-uri", "picture-uri-dark":
+				return "'" + uri + "'\n", nil
+			}
+			return "", errors.New("no such key")
+		})
+		if got == "" {
+			return
+		}
+		if len(got) > 1<<20 {
+			t.Fatalf("wallpaper path %d bytes", len(got))
+		}
+	})
+}
