@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/fs"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -48,6 +51,51 @@ func FuzzWriteRead(f *testing.F) {
 		}
 		if err := Read(&buf, 1<<20, &got); !errors.Is(err, io.EOF) {
 			t.Fatalf("second Read: got %v want EOF", err)
+		}
+	})
+}
+
+func FuzzStateOf(f *testing.F) {
+	f.Add("/opt/app", []byte(`{"path":"/opt/app"}`), false)
+	f.Add("/opt/app", []byte(`{"path":"/other"}`), false)
+	f.Add("/opt/app", []byte(`{}`), false)
+	f.Add("/opt/app", []byte(`not json`), false)
+	f.Add("/opt/app", []byte(`{"path":""}`), false)
+	f.Add("/opt/app", []byte{}, true)
+	f.Fuzz(func(t *testing.T, exe string, b []byte, missing bool) {
+		var err error
+		if missing {
+			err = fs.ErrNotExist
+		}
+		s := stateOf(exe, b, err)
+		switch s {
+		case OK, Missing, Stale, Unreadable:
+		default:
+			t.Fatalf("unknown state %q", s)
+		}
+		if missing && s != Missing {
+			t.Fatalf("ErrNotExist gave %q", s)
+		}
+		if !missing && s == Missing {
+			t.Fatalf("nil read error gave Missing")
+		}
+	})
+}
+
+func FuzzCheckName(f *testing.F) {
+	for _, n := range []string{"com.example.host", "a_b.c1", "Com.Example", "my-host", "host.", ".host", "a..b", "", "org.example.app"} {
+		f.Add(n)
+	}
+	f.Fuzz(func(t *testing.T, name string) {
+		err := (Host{Name: name}).checkName()
+		if err == nil {
+			if name != filepath.Base(name) || strings.Contains(name, "..") || name[0] == '.' || name[len(name)-1] == '.' {
+				t.Fatalf("checkName accepted %q", name)
+			}
+			return
+		}
+		if !errors.Is(err, ErrBadName) {
+			t.Fatalf("checkName(%q) = %v, want ErrBadName", name, err)
 		}
 	})
 }
