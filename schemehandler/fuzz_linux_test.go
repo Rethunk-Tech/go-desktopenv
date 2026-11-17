@@ -56,7 +56,7 @@ func FuzzListsMime(f *testing.F) {
 			if !ok {
 				continue
 			}
-			for _, item := range strings.Split(strings.TrimSuffix(v, ";"), ";") {
+			for item := range strings.SplitSeq(strings.TrimSuffix(v, ";"), ";") {
 				if strings.TrimSpace(item) == mime {
 					listed = true
 				}
@@ -81,7 +81,7 @@ func FuzzCheckDesktopID(f *testing.F) {
 		if id != filepath.Base(id) || strings.ContainsAny(id, `/\`) || !strings.HasSuffix(id, ".desktop") || id == ".desktop" {
 			t.Fatalf("checkDesktopID accepted %q", id)
 		}
-		dir := filepath.Join("applications")
+		dir := "applications"
 		got := filepath.Join(dir, id)
 		rel, err := filepath.Rel(dir, got)
 		if err != nil || !filepath.IsLocal(rel) {
