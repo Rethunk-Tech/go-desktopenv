@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -54,22 +55,23 @@ func requireBus(t *testing.T) {
 type fake struct {
 	mu sync.Mutex
 
-	conn      *dbus.Conn
-	response  uint32 // Response code sent after a request method
-	silent    bool   // never send a Response
-	results   map[string]dbus.Variant
-	secret    string
-	missing   bool         // GetDesktopEntry reports NOENT
-	setting   dbus.Variant // Settings.Read answer; notFound overrides it
-	notFound  bool
-	entry     string // Install's entry, recorded
-	closed    chan dbus.ObjectPath
-	seen      map[string]map[string]dbus.Variant // request method -> options
-	forger    *dbus.Conn                         // when set, also emits a forged Response from this connection
-	notified  map[string]map[string]dbus.Variant // Notification id -> options, until removed
-	malformed []any                              // when set, emit this as the Response body instead of (code, results)
-	holdPipe  bool                               // keep the Secret write end open so the caller blocks on the read
-	pipeW     *os.File
+	conn        *dbus.Conn
+	response    uint32 // Response code sent after a request method
+	silent      bool   // never send a Response
+	results     map[string]dbus.Variant
+	secret      string
+	missing     bool         // GetDesktopEntry reports NOENT
+	setting     dbus.Variant // Settings.Read answer; notFound overrides it
+	notFound    bool
+	entry       string // Install's entry, recorded
+	closed      chan dbus.ObjectPath
+	seen        map[string]map[string]dbus.Variant // request method -> options
+	forger      *dbus.Conn                         // when set, also emits a forged Response from this connection
+	notified    map[string]map[string]dbus.Variant // Notification id -> options, until removed
+	malformed   []any                              // when set, emit this as the Response body instead of (code, results)
+	holdPipe    bool                               // keep the Secret write end open so the caller blocks on the read
+	pipeW       *os.File
+	uninstalled []string
 }
 
 type (
@@ -169,7 +171,12 @@ func (l *launcher) GetDesktopEntry(string) (string, *dbus.Error) {
 	return "[Desktop Entry]\n", nil
 }
 
-func (l *launcher) Uninstall(string, map[string]dbus.Variant) *dbus.Error { return nil }
+func (l *launcher) Uninstall(id string, _ map[string]dbus.Variant) *dbus.Error {
+	(*fake)(l).mu.Lock()
+	defer (*fake)(l).mu.Unlock()
+	(*fake)(l).uninstalled = append((*fake)(l).uninstalled, id)
+	return nil
+}
 
 func (s *secretIf) RetrieveSecret(sender dbus.Sender, fd dbus.UnixFD, options map[string]dbus.Variant) (dbus.ObjectPath, *dbus.Error) {
 	f := (*fake)(s)
@@ -337,6 +344,25 @@ func TestLauncherExistsTreatsGLibNoentAsMissing(t *testing.T) {
 	if err := UninstallLauncher(ctx5(t), "x.desktop"); err != nil {
 		t.Fatalf("uninstalling a missing launcher: %v", err)
 	}
+	f.mu.Lock()
+	got := slices.Clone(f.uninstalled)
+	f.mu.Unlock()
+	if len(got) != 0 {
+		t.Fatalf("Uninstall called for a missing launcher: %q", got)
+	}
+}
+
+func TestUninstallLauncherRemovesAPresentLauncher(t *testing.T) {
+	f := startFake(t)
+	if err := UninstallLauncher(ctx5(t), "x.desktop"); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	got := slices.Clone(f.uninstalled)
+	f.mu.Unlock()
+	if len(got) != 1 || got[0] != "x.desktop" {
+		t.Fatalf("Uninstall = %q", got)
+	}
 }
 
 func TestRetrieveSecretReadsThePipe(t *testing.T) {
@@ -353,6 +379,11 @@ func TestRetrieveSecretReadsThePipe(t *testing.T) {
 	f.set(func(f *fake) { f.secret = strings.Repeat("x", maxSecret+1) })
 	if _, err := RetrieveSecret(ctx5(t)); err == nil {
 		t.Fatal("want error for a secret over the bound")
+	}
+	f.set(func(f *fake) { f.secret = strings.Repeat("x", maxSecret) })
+	got, err = RetrieveSecret(ctx5(t))
+	if err != nil || len(got) != maxSecret {
+		t.Fatalf("a secret at the bound: %d %v", len(got), err)
 	}
 }
 
