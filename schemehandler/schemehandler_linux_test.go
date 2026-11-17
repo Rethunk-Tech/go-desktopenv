@@ -248,6 +248,43 @@ func TestEntryProgramReadsBackWhateverThePathHolds(t *testing.T) {
 	}
 }
 
+func TestRemoveEntryOfAMissingFileDoesNotRebuildTheDatabase(t *testing.T) {
+	h, r := newLinux(t, testConfig(), "")
+	if err := h.RemoveEntry(); err != nil {
+		t.Fatal(err)
+	}
+	if len(r.calls) != 0 {
+		t.Errorf("update-desktop-database ran for a missing entry: %q", r.calls)
+	}
+}
+
+func TestRemoveEntryRebuildsTheDatabase(t *testing.T) {
+	h, r := newLinux(t, testConfig(), "")
+	if err := h.WriteEntry(); err != nil {
+		t.Fatal(err)
+	}
+	r.calls = nil
+	if err := h.RemoveEntry(); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(r.calls, updateDB+" "+h.apps()) {
+		t.Errorf("desktop database not rebuilt: %q", r.calls)
+	}
+}
+
+func TestWriteEntryWithNoSchemesDoesNotPanic(t *testing.T) {
+	cfg := testConfig()
+	cfg.Schemes = nil
+	h, _ := newLinux(t, cfg, "")
+	if err := h.WriteEntry(); err != nil {
+		t.Fatal(err)
+	}
+	got := read(t, h.desktopPath())
+	if strings.Contains(got, "x-scheme-handler/nxm") {
+		t.Errorf("empty Schemes listed a scheme: %s", got)
+	}
+}
+
 func TestPackagedSetsDefaultsWithoutWriting(t *testing.T) {
 	cfg := testConfig()
 	cfg.Packaged = true
@@ -283,6 +320,8 @@ func TestNoIntegratorWritesOurEntry(t *testing.T) {
 	h, r := newLinux(t, testConfig(), "")
 	// An entry that cannot take a URL does not count as an integrator's.
 	writeApp(t, h, "other.desktop", "[Desktop Entry]\nExec=/opt/app/app\n")
+	writeApp(t, h, "empty.desktop", "[Desktop Entry]\nExec=\n")
+	writeApp(t, h, "envonly.desktop", "[Desktop Entry]\nExec=env\n")
 	if err := h.Register("nxm"); err != nil {
 		t.Fatal(err)
 	}
@@ -321,6 +360,22 @@ func TestAnIntegratorsEntryIsTheHandler(t *testing.T) {
 	}
 	if owner, _ := h.Owner("nxm"); !owner.Mine || owner.Name != "App" {
 		t.Errorf("owner: %+v", owner)
+	}
+}
+
+func TestAnIntegratorWithUppercaseFieldCodeIsTheHandler(t *testing.T) {
+	cfg := testConfig()
+	cfg.Exe = "/home/u/Apps/app.appimage_0.appimage"
+	h, r := newLinux(t, cfg, "")
+	writeApp(t, h, "appimagekit_app.desktop", "[Desktop Entry]\nExec=\""+cfg.Exe+"\" %U\n")
+	if err := h.Register("nxm"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(h.desktopPath()); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatal("wrote its own entry beside the integrator's")
+	}
+	if r.byMime[schemeMime("nxm")] != "appimagekit_app.desktop" {
+		t.Errorf("default %q", r.byMime[schemeMime("nxm")])
 	}
 }
 

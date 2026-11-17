@@ -77,6 +77,7 @@ func TestCommandLineToArgv(t *testing.T) {
 		`a\\\"b`:           {`a\"b`},
 		`"C:\dir\\" x`:     {`C:\dir\`, "x"},
 		`a\b  ""`:          {`a\b`, ""},
+		`a\`:               {`a\`},
 		"  tab\tseparated": {"tab", "separated"},
 	} {
 		if got := commandLineToArgv(in); !reflect.DeepEqual(got, want) {
@@ -97,6 +98,21 @@ func TestPreviousRoundTrip(t *testing.T) {
 	}
 	if previousID("", icon, name) != "" || splitPrevious("") != (previous{}) {
 		t.Fatal("no command means nothing saved")
+	}
+	if got := splitPrevious(cmd); got != (previous{cmd: cmd}) {
+		t.Fatalf("one-line value = %+v", got)
+	}
+}
+
+func TestCheckSchemeAcceptsRFC3986Bytes(t *testing.T) {
+	t.Parallel()
+	for _, scheme := range []string{"A", "Z", "a", "z", "h0", "h9", "http+ssl", "svn+ssh", "a-b", "a.b"} {
+		if err := checkScheme(scheme); err != nil {
+			t.Errorf("checkScheme(%q): %v", scheme, err)
+		}
+		if err := checkLink(scheme + "://x"); err != nil {
+			t.Errorf("checkLink(%q://x): %v", scheme, err)
+		}
 	}
 }
 
