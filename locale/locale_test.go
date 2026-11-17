@@ -10,6 +10,8 @@ func TestFromPOSIX(t *testing.T) {
 		"C":                "",
 		"POSIX":            "",
 		"C.UTF-8":          "",
+		".UTF-8":           "",
+		"@euro":            "",
 		"":                 "",
 	} {
 		if got := FromPOSIX(in); got != want {
