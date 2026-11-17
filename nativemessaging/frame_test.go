@@ -38,6 +38,15 @@ func TestWriteThenReadRoundTrips(t *testing.T) {
 	}
 }
 
+func TestReadAcceptsAMessageAtTheLimit(t *testing.T) {
+	t.Parallel()
+	body := `{}`
+	var v any
+	if err := Read(bytes.NewReader(frame(body)), len(body), &v); err != nil {
+		t.Fatalf("at limit: %v", err)
+	}
+}
+
 func TestReadRefusesBadFrames(t *testing.T) {
 	t.Parallel()
 	for name, in := range map[string][]byte{

@@ -2,6 +2,7 @@ package nativemessaging
 
 import (
 	"errors"
+	"runtime"
 	"testing"
 )
 
@@ -12,6 +13,7 @@ func TestCheckName(t *testing.T) {
 	}{
 		{"com.example.host", true},
 		{"a_b.c1", true},
+		{"z0.9_host", true},
 		{"Com.Example", false},
 		{"my-host", false},
 		{"host.", false},
@@ -30,5 +32,16 @@ func TestCheckName(t *testing.T) {
 		if !errors.Is(err, ErrBadName) {
 			t.Errorf("checkName(%q) = %v, want ErrBadName", tt.name, err)
 		}
+	}
+}
+
+func TestStateOfTreatsACaseFoldedPathAsStaleOffWindows(t *testing.T) {
+	t.Parallel()
+	want := Stale
+	if runtime.GOOS == "windows" {
+		want = OK
+	}
+	if got := stateOf("/app", []byte(`{"path":"/App"}`), nil); got != want {
+		t.Errorf("stateOf = %q, want %q", got, want)
 	}
 }

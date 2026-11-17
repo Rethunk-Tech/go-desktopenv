@@ -11,6 +11,10 @@ func TestFramedSize(t *testing.T) {
 	if err != nil || got != 16 || n32 != 12 {
 		t.Fatalf("framedSize(12) = %d, %d, %v", got, n32, err)
 	}
+	got, n32, err = framedSize(0)
+	if err != nil || got != 4 || n32 != 0 {
+		t.Fatalf("framedSize(0) = %d, %d, %v", got, n32, err)
+	}
 	if _, _, err := framedSize(-1); err == nil {
 		t.Fatal("framedSize(-1): want error")
 	}
