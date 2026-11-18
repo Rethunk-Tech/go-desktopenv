@@ -9,7 +9,14 @@
 
 ---
 
-What a packaged Go desktop app needs to reach its desktop: xdg-desktop-portal calls, Flatpak detection and host commands, per-user folders, console-less Windows children, Desktop Entry Exec values, an AppImage-free child environment, installed fonts, the system accent colour, the UI language, Windows shortcut files, URL scheme handling, browser native messaging, start-at-sign-in, revealing a path, the desktop wallpaper and Windows Firewall rules. Module `github.com/Rethunk-Tech/go-desktopenv`, sixteen packages: `portal`, `flatpak`, `userdirs`, `desktopentry`, `nowindow`, `hostenv`, `fonts`, `sysaccent`, `locale`, `lnk`, `schemehandler`, `nativemessaging`, `autostart`, `reveal`, `wallpaper` and `firewall`. Import only the ones you need; `portal` pulls in godbus, `lnk` and `firewall` go-ole on Windows, `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler`, `nativemessaging`, `autostart`, `wallpaper` and `firewall` `golang.org/x/sys` on Windows, and `schemehandler`, `nativemessaging`, `hostenv` and `reveal` go-safefs. The rest pull in no third-party code.
+Module `github.com/Rethunk-Tech/go-desktopenv`. Sixteen packages a packaged Go desktop app uses to reach its desktop. Import only the ones you need; the rest pull in no third-party code.
+
+| Import | Packages |
+| --- | --- |
+| godbus | `portal` |
+| go-ole (Windows) | `lnk`, `firewall` |
+| `golang.org/x/sys` (Windows) | `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler`, `nativemessaging`, `autostart`, `wallpaper`, `firewall` |
+| go-safefs | `schemehandler`, `nativemessaging`, `hostenv`, `reveal` |
 
 A Flatpak app needs `--talk-name=org.freedesktop.Flatpak` for `flatpak`; portals need nothing extra. A `portal` call waits on a user dialog until its context ends, so set a deadline. `RetrieveSecret` works only inside a Flatpak.
 

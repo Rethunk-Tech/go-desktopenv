@@ -1,14 +1,34 @@
 # AGENTS.md
 
-Sixteen packages a packaged Go desktop app uses to reach its desktop: `portal` (xdg-desktop-portal over D-Bus),
-`flatpak` (sandbox detection and host commands), `userdirs` (per-user folders), `desktopentry` (Desktop Entry
-values), `nowindow` (console-less Windows children), `hostenv` (a child's environment outside an AppImage's),
-`fonts` (installed families), `sysaccent` (the desktop's accent colour), `locale` (the UI language), `lnk` (Windows shortcut files),
-`schemehandler` (URL scheme registration), `nativemessaging` (browser native-messaging hosts), `autostart` (start at sign-in), `reveal` (a path in the file manager), `wallpaper` (the desktop wallpaper) and `firewall` (Windows Firewall rules). It imports no consumer package, no GUI toolkit and no
-branding; names, ids and wording are caller arguments. `portal` alone imports godbus; `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler`, `nativemessaging`, `autostart`, `wallpaper` and `firewall` import
-`golang.org/x/sys` and `lnk` and `firewall` import go-ole, on Windows only, so a consumer of another package gains none of them.
-`schemehandler` and `nativemessaging` import go-safefs and share `internal/hostfile` for the host's files; `reveal` imports go-safefs.
-`sysaccent` reads through `portal` on Linux, and `fonts` runs `fc-list` with `hostenv`'s environment.
+Sixteen packages a packaged Go desktop app uses to reach its desktop. It imports no consumer package, no GUI toolkit and no branding; names, ids and wording are caller arguments.
+
+| Package | Holds |
+| --- | --- |
+| `portal` | xdg-desktop-portal over D-Bus |
+| `flatpak` | sandbox detection and host commands |
+| `userdirs` | per-user folders |
+| `desktopentry` | Desktop Entry values |
+| `nowindow` | console-less Windows children |
+| `hostenv` | a child's environment outside an AppImage's |
+| `fonts` | installed families |
+| `sysaccent` | the desktop's accent colour |
+| `locale` | the UI language |
+| `lnk` | Windows shortcut files |
+| `schemehandler` | URL scheme registration |
+| `nativemessaging` | browser native-messaging hosts |
+| `autostart` | start at sign-in |
+| `reveal` | a path in the file manager |
+| `wallpaper` | the desktop wallpaper |
+| `firewall` | Windows Firewall rules |
+
+| Import | Packages |
+| --- | --- |
+| godbus | `portal` only |
+| `golang.org/x/sys` (Windows only) | `nowindow`, `fonts`, `sysaccent`, `locale`, `schemehandler`, `nativemessaging`, `autostart`, `wallpaper`, `firewall` |
+| go-ole (Windows only) | `lnk`, `firewall` |
+| go-safefs | `schemehandler`, `nativemessaging`, `hostenv`, `reveal` |
+
+`schemehandler` and `nativemessaging` share `internal/hostfile` for the host's files. `sysaccent` reads through `portal` on Linux. `fonts` runs `fc-list` with `hostenv`'s environment. A consumer of another package gains none of the Windows-only imports.
 
 ## Gate
 
