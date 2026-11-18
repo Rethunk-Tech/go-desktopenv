@@ -28,6 +28,30 @@ func TestExecRunsAProcess(t *testing.T) {
 	}
 }
 
+func TestSpawnStartsAProcess(t *testing.T) {
+	t.Setenv("HOSTFILE_HELPER", "1")
+	if err := Spawn(os.Args[0]); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSpawnReportsAMissingProgram(t *testing.T) {
+	if err := Spawn(filepath.Join(t.TempDir(), "no-such")); err == nil {
+		t.Fatal("missing program: want error")
+	}
+}
+
+func TestWriteFailsWhenAFileBlocksTheParentFolder(t *testing.T) {
+	t.Setenv("FLATPAK_ID", "")
+	blocker := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := (Host{}).Write(filepath.Join(blocker, "child"), []byte("y"), 0o600); err == nil {
+		t.Fatal("Write through a file: want error")
+	}
+}
+
 func TestConfigHome(t *testing.T) {
 	home, err := os.UserHomeDir() // userdirs honours XDG_CONFIG_HOME only for the real home
 	if err != nil {
