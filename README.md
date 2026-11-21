@@ -7,8 +7,6 @@
 
 </div>
 
----
-
 Module `github.com/Rethunk-Tech/go-desktopenv`. Sixteen packages a packaged Go desktop app uses to reach its desktop. Import only the ones you need; the rest pull in no third-party code.
 
 | Import | Packages |
