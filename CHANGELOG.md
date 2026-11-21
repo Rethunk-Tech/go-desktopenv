@@ -6,6 +6,16 @@ Notable changes to `go-desktopenv`. The format follows
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-11-21
+
+### Fixed
+
+- `schemehandler` removes the default only from mimeapps.list's Default Applications group, skips only the app's own desktop entry when finding an integrator, and matches `WriteEntry`'s scheme against the entry's MimeType items.
+- `nativemessaging` rejects host names Chrome would refuse, and refuses a `FLATPAK_ID` that escapes the app folder.
+- `userdirs` refuses a Flatpak app id that is not one path element.
+
+## [0.9.2] - 2026-11-12
+
 ### Fixed
 
 - `portal` treats a Request.Response with missing fields or the wrong types as an error, not as success.
@@ -107,7 +117,9 @@ Notable changes to `go-desktopenv`. The format follows
 - `userdirs` resolves the config and data folders for a home (XDG on Linux, `%APPDATA%` and `%LOCALAPPDATA%` on Windows), the host user's folders from inside a Flatpak, and Flatpak app roots; an environment value counts only when absolute and only for the real home.
 - `portal` calls xdg-desktop-portal: `SetAutostart`, `InstallLauncher`, `UninstallLauncher`, `LauncherExists`, `RetrieveSecret` and `ReadSetting`, each bounded by a context and answering `ErrUnsupported` off Linux.
 
-[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.9.3...HEAD
+[0.9.3]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.9.2...v0.9.3
+[0.9.2]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/Rethunk-Tech/go-desktopenv/compare/v0.7.0...v0.8.0
