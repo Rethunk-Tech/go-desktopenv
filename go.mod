@@ -11,7 +11,7 @@ tool (
 )
 
 require (
-	github.com/Rethunk-Tech/go-safefs v0.9.1
+	github.com/Rethunk-Tech/go-safefs v0.10.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/godbus/dbus/v5 v5.2.4
 	golang.org/x/sys v0.50.0
